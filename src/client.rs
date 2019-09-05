@@ -93,7 +93,7 @@ impl Client {
         let token = self.access_token.clone().unwrap();
 
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(8))
+            .timeout(Duration::from_secs(30))
             .build()?;
 
         let url = self.api_domain().unwrap() + path;
