@@ -6,12 +6,16 @@ use reqwest;
 use std::collections::HashMap;
 use std::time::Duration;
 
+/// Default network timeout for API requests.
+const DEFAULT_TIMEOUT: u64 = 30;
+
 pub struct Client {
     access_token: Option<String>,
     api_domain: Option<String>,
     client_id: String,
     client_secret: String,
-    refresh_token: String
+    refresh_token: String,
+    timeout: u64,
 }
 
 impl Client {
@@ -28,8 +32,19 @@ impl Client {
             api_domain,
             client_id,
             client_secret,
-            refresh_token
+            refresh_token,
+            timeout: DEFAULT_TIMEOUT,
         }
+    }
+
+    /// Get the timeout for API requests.
+    pub fn timeout(&self) -> u64 {
+        self.timeout
+    }
+
+    /// Set the timeout for API requests.
+    pub fn set_timeout(&mut self, timeout: u64) {
+        self.timeout = timeout;
     }
 
     /// Get the access token.
@@ -94,7 +109,7 @@ impl Client {
         let token = self.access_token.clone().unwrap();
 
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
+            .timeout(Duration::from_secs(self.timeout))
             .build()?;
 
         let url = self.api_domain().unwrap() + path;
@@ -119,7 +134,7 @@ impl Client {
         let token = self.access_token.clone().unwrap();
 
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
+            .timeout(Duration::from_secs(self.timeout))
             .build()?;
 
         let url = self.api_domain().unwrap() + path;
@@ -145,7 +160,7 @@ impl Client {
         let token = self.access_token.clone().unwrap();
 
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(30))
+            .timeout(Duration::from_secs(self.timeout))
             .build()?;
 
         let url = self.api_domain().unwrap() + path;
