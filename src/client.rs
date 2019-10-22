@@ -36,7 +36,9 @@ impl Client {
             timeout: DEFAULT_TIMEOUT,
         }
     }
+}
 
+impl Client {
     /// Get the timeout for API requests.
     pub fn timeout(&self) -> u64 {
         self.timeout
@@ -75,7 +77,9 @@ impl Client {
             None => None
         }
     }
+}
 
+impl Client {
     /// Get a new access token from Zoho. Guarantees an access token when it returns an `Result::Ok`.
     pub fn get_new_token(&mut self) -> Result<TokenRecord, ClientError> {
         let url = format!(
