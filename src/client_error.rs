@@ -6,6 +6,15 @@ pub enum ClientError {
     General(String)
 }
 
+impl ClientError {
+    pub fn to_string(&self) -> String {
+        match self {
+            ClientError::NeedsToken(error) => error.clone(),
+            ClientError::General(error) => error.clone(),
+        }
+    }
+}
+
 impl From<String> for ClientError {
     fn from(err: String) -> ClientError {
         ClientError::General(err)
