@@ -14,6 +14,24 @@ use mockito;
 /// Default network timeout for API requests.
 const DEFAULT_TIMEOUT: u64 = 30;
 
+/// Handles making requests to the v2 of the Zoho API.
+///
+/// You can either create this client with a pre-determined access token, or fetch
+/// a new one later on. You will need an API client ID, secret, and refresh token.
+///
+/// You can create a client with the `with_creds()` method:
+///
+/// ```
+/// use zoho::ZohoClient;
+///
+/// let client = ZohoClient::with_creds(
+///     None, // access token
+///     None, // api domain
+///     String::from(client_id),
+///     String::from(client_secret),
+///     String::from(refresh_token)
+/// );
+/// ```
 pub struct Client {
     access_token: Option<String>,
     api_domain: Option<String>,
@@ -24,7 +42,10 @@ pub struct Client {
 }
 
 impl Client {
-    /// Create a new client with an access token, and or client credentials.
+    /// Create a new client.
+    ///
+    /// You can supply an optional access token and/or api domain. However, you must supply
+    /// a client ID, secret, and refresh token.
     pub fn with_creds(
         access_token: Option<String>,
         api_domain: Option<String>,
@@ -44,7 +65,7 @@ impl Client {
 }
 
 impl Client {
-    /// Get the timeout for API requests.
+    /// Get the timeout (in seconds) for API requests. Default is 30 seconds.
     pub fn timeout(&self) -> u64 {
         self.timeout
     }
@@ -59,12 +80,20 @@ impl Client {
         self.access_token.clone()
     }
 
-    /// Get the API base URL.
+    /// Get the API domain URL.
     pub fn api_domain(&self) -> Option<String> {
         self.api_domain.clone()
     }
 
-    /// Get an abbreviated version of the access token.
+    /// Get an abbreviated version of the access token. This is a (slightly) safer version
+    /// of the access token should you need to print it out.
+    ///
+    /// ```
+    /// let token = "1000.ad8f97a9sd7f9a7sdf7a89s7df87a9s8.a77fd8a97fa89sd7f89a7sdf97a89df3";
+    /// let client = ZohoClient::with:creds(Some(token.to_string()));
+    ///
+    /// assert_eq!("1000.ad8f..9df3".to_string(), client.get_abbreviated_access_token());
+    /// ```
     pub fn abbreviated_access_token(&self) -> Option<String> {
         match &self.access_token {
             Some(access_token) => {
@@ -84,13 +113,10 @@ impl Client {
     }
 }
 
-#[derive(Deserialize)]
-struct ErrorResponse {
-    error: String,
-}
-
 impl Client {
     /// Get the API base path, which changes depending on the current environment.
+    ///
+    /// This is primarily used to allow for HTTP test mocking of API calls.
     fn get_api_base_path() -> String {
         #[cfg(test)]
         return mockito::server_url();
@@ -99,7 +125,12 @@ impl Client {
         return String::from("https://accounts.zoho.com");
     }
 
-    /// Get a new access token from Zoho. Guarantees an access token when it returns an `Result::Ok`.
+    /// Get a new access token from Zoho. Guarantees an access token when it returns
+    /// an `Result::Ok`.
+    ///
+    /// The access token is saved to the `ZohoClient`, so you don't
+    /// need to retrieve the token and set it in different steps. But a copy
+    /// of it is returned by this method.
     pub fn get_new_token(&mut self) -> Result<TokenRecord, ClientError> {
         let url = format!(
             "{}/oauth/v2/token?grant_type=refresh_token&client_id={}&client_secret={}&refresh_token={}",
@@ -130,6 +161,8 @@ impl Client {
     }
 
     /// Make a GET request to the Zoho server.
+    ///
+    /// TODO: needs to handle error responses from Zoho.
     pub fn get<T: serde::de::DeserializeOwned>(&mut self, path: &str) -> Result<T, ClientError> {
         if self.access_token.is_none() {
             self.get_new_token()?;
@@ -155,6 +188,8 @@ impl Client {
     }
 
     /// Make a POST request to the Zoho server.
+    ///
+    /// TODO: needs to handle error responses from Zoho.
     pub fn post(&mut self, path: &str, data: HashMap<String, String>) -> Result<(), ClientError> {
          if self.access_token.is_none() {
             self.get_new_token()?;
@@ -181,6 +216,8 @@ impl Client {
     }
 
     /// Make a PUT request to the Zoho server.
+    ///
+    /// TODO: needs to handle error responses from Zoho.
     pub fn put(&mut self, path: &str, data: Vec<HashMap<String, String>>) -> Result<(), ClientError> {
         if self.access_token.is_none() {
             self.get_new_token()?;
@@ -205,6 +242,14 @@ impl Client {
 
         Ok(data)
     }
+}
+
+/// This is one possible error response that Zoho might send back. If the API response
+/// contains an `error` field, it will be treated as an `ErrorResponse` and should be
+/// handled accordingly.
+#[derive(Deserialize)]
+struct ErrorResponse {
+    error: String,
 }
 
 #[cfg(test)]
