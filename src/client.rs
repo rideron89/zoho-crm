@@ -4,6 +4,7 @@ extern crate serde_json;
 use crate::client_error::ClientError;
 use crate::token_record::TokenRecord;
 use reqwest;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -80,6 +81,11 @@ impl Client {
     }
 }
 
+#[derive(Deserialize)]
+struct ErrorResponse {
+    error: String,
+}
+
 impl Client {
     /// Get a new access token from Zoho. Guarantees an access token when it returns an `Result::Ok`.
     pub fn get_new_token(&mut self) -> Result<TokenRecord, ClientError> {
@@ -92,8 +98,14 @@ impl Client {
 
         let client = reqwest::Client::new();
         let mut response = client.post(url.as_str()).send()?;
+        let raw_response = response.text()?;
 
-        let api_response: TokenRecord = response.json()?;
+        // TODO: refactor this with a more idiomatic pattern
+        if let Ok(response) = serde_json::from_str::<ErrorResponse>(&raw_response) {
+            return Err(ClientError::General(response.error));
+        }
+
+        let api_response: TokenRecord = serde_json::from_str(&raw_response)?;
 
         self.access_token = api_response.access_token.clone();
         self.api_domain = api_response.api_domain.clone();
