@@ -2,7 +2,7 @@ extern crate serde;
 
 use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct TokenRecord {
     pub access_token: Option<String>,
     pub api_domain: Option<String>,
