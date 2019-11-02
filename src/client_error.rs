@@ -12,6 +12,12 @@ impl From<String> for ClientError {
     }
 }
 
+impl From<serde_json::Error> for ClientError {
+    fn from(err: serde_json::Error) -> Self {
+        ClientError::General(err.to_string())
+    }
+}
+
 impl From<&str> for ClientError {
     fn from(err: &str) -> ClientError {
         ClientError::General(String::from(err))
