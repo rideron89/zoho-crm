@@ -19,10 +19,21 @@ const DEFAULT_TIMEOUT: u64 = 30;
 /// You can either create this client with a pre-determined access token, or fetch
 /// a new one later on. You will need an API client ID, secret, and refresh token.
 ///
-/// You can create a client with the `with_creds()` method:
+/// You can read more information here:
+/// https://www.zoho.com/crm/developer/docs/api/oauth-overview.html
+///
+/// You can create a client with the `with_creds()` method. The method also allows
+/// you to supply an access token and API domain if you are pulling them from
+/// somewhere else, such as a database.
+///
+/// ### Example
 ///
 /// ```
 /// use zoho::ZohoClient;
+///
+/// let client_id = "YOUR_CLIENT_ID";
+/// let client_secret = "YOUR_CLIENT_SECRET";
+/// let refresh_token = "YOUR_REFRESH_TOKEN";
 ///
 /// let client = ZohoClient::with_creds(
 ///     None, // access token
@@ -89,10 +100,15 @@ impl Client {
     /// of the access token should you need to print it out.
     ///
     /// ```
+    /// # use zoho::ZohoClient;
     /// let token = "1000.ad8f97a9sd7f9a7sdf7a89s7df87a9s8.a77fd8a97fa89sd7f89a7sdf97a89df3";
-    /// let client = ZohoClient::with:creds(Some(token.to_string()));
+    /// # let client_id = String::from("YOUR_CLIENT_ID");
+    /// # let client_secret = String::from("YOUR_CLIENT_SECRET");
+    /// # let refresh_token = String::from("YOUR_REFRESH_TOKEN");
     ///
-    /// assert_eq!("1000.ad8f..9df3".to_string(), client.get_abbreviated_access_token());
+    /// # let mut client = ZohoClient::with_creds(Some(token.to_string()), None, client_id, client_secret, refresh_token);
+    ///
+    /// assert_eq!("1000.ad8f..9df3".to_string(), client.abbreviated_access_token().unwrap());
     /// ```
     pub fn abbreviated_access_token(&self) -> Option<String> {
         match &self.access_token {
