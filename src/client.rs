@@ -181,10 +181,22 @@ impl Client {
             .get(url.as_str())
             .header("Authorization", String::from("Zoho-oauthtoken ") + &token)
             .send()?;
+        let raw_response = response.text()?;
 
-        let data = response.json()?;
+        if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
+            return Err(ClientError::General(response.code));
+        }
 
-        Ok(data)
+        match serde_json::from_str::<T>(&raw_response) {
+            Ok(data) => Ok(data),
+            Err(_) => {
+                if raw_response.len() > 0 {
+                    Err(ClientError::General(raw_response))
+                } else {
+                    Err(ClientError::General(String::from("Unknown error response returned")))
+                }
+            },
+        }
     }
 
     /// Make a POST request to the Zoho server.
@@ -252,12 +264,50 @@ struct AuthErrorResponse {
     error: String,
 }
 
+/// This is one possible error response that Zoho might send back from an API request. It is
+/// different than the response format given back when requesting a token. `code` will be an
+/// identifier for the type of error, while the `_message` field *might* have more information.
+///
+/// `status` will return a text status: "error" on error.
+///
+/// There is also a `data` field we are not capturing.
+#[derive(Deserialize)]
+struct ApiErrorResponse {
+    code: String,
+
+    #[serde(alias = "message")]
+    _message: String,
+
+    #[serde(alias = "status")]
+    _status: String,
+}
+
 #[cfg(test)]
 mod tests {
     extern crate mockito;
 
     use mockito::{mock, Matcher, Mock};
     use super::Client;
+    use serde::Deserialize;
+
+    #[derive(Debug, Deserialize)]
+    struct Response {
+        data: Vec<ResponseDataItem>,
+        info: ResponseInfo,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct ResponseDataItem {
+        id: String,
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct ResponseInfo {
+        more_records: bool,
+        per_page: usize,
+        count: usize,
+        page: usize,
+    }
 
     /// Get a `Client` with an access token.
     fn get_client(access_token: Option<String>, api_domain: Option<String>) -> Client {
@@ -413,5 +463,58 @@ mod tests {
 
         mocker.assert();
         assert_eq!(token.api_domain, Some(api_domain.to_string()));
+    }
+
+    #[test]
+    fn get_success() {
+        let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let api_domain = mockito::server_url();
+        let record_id = "40000000123456789";
+        let body = format!(r#"{{"data":[{{"id":"{}"}}],"info":{{"more_records":true,"per_page":1,"count":1,"page":1}}}}"#, record_id);
+        let mocker = get_mocker("GET", Matcher::Any, Some(&body));
+        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+
+        let response: Response = client.get("/crm/v2/Accounts?page=1&per_page=1").unwrap();
+
+        mocker.assert();
+        assert_eq!(response.data.get(0).unwrap().id, record_id);
+    }
+
+    #[test]
+    fn get_regular_error() {
+        let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let api_domain = mockito::server_url();
+        let error_code = "INVALID_URL_PATTERN";
+        let body = format!(r#"{{"code":"{}","details":{{}},"message":"Please check if the URL trying to access is a correct one","status":"error"}}"#, error_code);
+        let mocker = get_mocker("GET", Matcher::Any, Some(&body));
+        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+
+        match client.get::<Response>("/crm/v2/INVALIDMODULE?page=1&per_page=1") {
+            Ok(_) => panic!("Response did not return an error"),
+            Err(err) => {
+                assert_eq!(err.to_string(), error_code.to_string());
+            }
+        }
+
+        mocker.assert();
+    }
+
+    #[test]
+    fn get_text_error() {
+        let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let api_domain = mockito::server_url();
+        let error_code = "invalid_client";
+        let body = format!("{}", error_code);
+        let mocker = get_mocker("GET", Matcher::Any, Some(&body));
+        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+
+        match client.get::<Response>("/crm/v2/INVALIDMODULE?page=1&per_page=1") {
+            Ok(_) => panic!("Response did not return an error"),
+            Err(err) => {
+                assert_eq!(err.to_string(), error_code.to_string());
+            }
+        }
+
+        mocker.assert();
     }
 }
