@@ -145,7 +145,7 @@ impl Client {
         let raw_response = response.text()?;
 
         // TODO: refactor this with a more idiomatic pattern
-        if let Ok(response) = serde_json::from_str::<ErrorResponse>(&raw_response) {
+        if let Ok(response) = serde_json::from_str::<AuthErrorResponse>(&raw_response) {
             return Err(ClientError::General(response.error));
         }
 
@@ -244,11 +244,11 @@ impl Client {
     }
 }
 
-/// This is one possible error response that Zoho might send back. If the API response
-/// contains an `error` field, it will be treated as an `ErrorResponse` and should be
-/// handled accordingly.
+/// This is one possible error response that Zoho might send back when requesting a token. If
+/// the API response contains an `error` field, it will be treated as an `AuthErrorResponse`
+/// and should be handled accordingly.
 #[derive(Deserialize)]
-struct ErrorResponse {
+struct AuthErrorResponse {
     error: String,
 }
 
