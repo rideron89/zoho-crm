@@ -1,5 +1,5 @@
 [package]
-name = "zoho"
+name = "zoho-crm"
 version = "0.1.0"
 authors = ["rideron89"]
 edition = "2018"
