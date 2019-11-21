@@ -10,6 +10,12 @@ authors = ["rideron89"]
 edition = "2018"
 keywords = ["zoho"]
 
+# files to include in the upload to crates.io
+include = [
+    "**/*.rs",
+    "Cargo.toml",
+]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
