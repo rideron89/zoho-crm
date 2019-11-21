@@ -1,8 +1,12 @@
 [package]
 name = "zoho-crm"
 version = "0.1.0"
+description = "Zoho CRM client built in Rust."
+license = "MIT"
+repository = "https://github.com/rideron89/zoho-crm"
 authors = ["rideron89"]
 edition = "2018"
+keywords = ["zoho"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
