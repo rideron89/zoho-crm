@@ -14,17 +14,15 @@ use mockito;
 /// Default network timeout for API requests.
 const DEFAULT_TIMEOUT: u64 = 30;
 
-/// Handles making requests to the v2 of the Zoho API.
+/// Handles making requests to v2 of the Zoho CRM API.
 ///
-/// You can either create this client with a pre-determined access token, or fetch
-/// a new one later on. You will need an API client ID, secret, and refresh token.
+/// You can either create a client with a preset access token, or fetch a new one later on.
+/// This can be useful if you are keeping track of you access tokens in a database, for example. You will need an API client ID, secret, and refresh token.
 ///
 /// You can read more information here:
 /// https://www.zoho.com/crm/developer/docs/api/oauth-overview.html
 ///
-/// You can create a client with the `with_creds()` method. The method also allows
-/// you to supply an access token and API domain if you are pulling them from
-/// somewhere else, such as a database.
+/// You should create a client with the `with_creds()` method.
 ///
 /// ### Example
 ///
@@ -284,7 +282,7 @@ struct AuthErrorResponse {
 
 /// This is one possible error response that Zoho might send back from an API request. It is
 /// different than the response format given back when requesting a token. `code` will be an
-/// identifier for the type of error, while the `_message` field *might* have more information.
+/// identifier for the type of error, while the `message` field *might* have more information.
 ///
 /// `status` will return a text status: "error" on error.
 ///
@@ -354,6 +352,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that using no preset access token works.
     fn no_access_token() {
         let client = get_client(None, Some(String::from("api_domain")));
 
@@ -361,6 +360,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that using no preset API domain works.
     fn no_domain() {
         let client = get_client(Some(String::from("access_token")), None);
 
@@ -368,6 +368,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that using a preset access token works.
     fn preset_access_token() {
         let access_token = String::from("access_token");
         let client = get_client(Some(access_token.clone()), None);
@@ -376,6 +377,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that using a preset API domain works.
     fn preset_api_domain() {
         let domain = String::from("api_domain");
         let client = get_client(None, Some(domain.clone()));
@@ -384,6 +386,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `valid_abbreviated_token()` method works without an access token.
     fn empty_abbreviated_token() {
         let client = get_client(None, None);
 
@@ -391,6 +394,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that the `valid_abbreviated_token()` method works with an access token.
     fn valid_abbreviated_token() {
         let access_token = String::from("12345678901234567890");
         let client = get_client(Some(access_token), None);
@@ -484,6 +488,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that fetching a record via the `get()` method works.
     fn get_success() {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
@@ -499,6 +504,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that an error code returned via the `get()` method returns an error.
     fn get_regular_error() {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
@@ -518,6 +524,7 @@ mod tests {
     }
 
     #[test]
+    /// Tests that a plain error message returned via the `get()` method returns an error.
     fn get_text_error() {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
