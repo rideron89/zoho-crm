@@ -178,7 +178,9 @@ impl Client {
 
     /// Make a GET request to the Zoho server.
     ///
-    /// TODO: needs to handle error responses from Zoho.
+    /// Will attempt to return a `ClientError::General` with the response code if the
+    /// request fails. If the response from Zoho is not valid JSON, a `ClientError::General`
+    /// with the raw response will be returned.
     pub fn get<T: serde::de::DeserializeOwned>(&mut self, path: &str) -> Result<T, ClientError> {
         if self.access_token.is_none() {
             self.get_new_token()?;
