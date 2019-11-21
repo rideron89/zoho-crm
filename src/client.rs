@@ -292,10 +292,12 @@ struct ApiErrorResponse {
     code: String,
 
     #[serde(alias = "message")]
-    _message: String,
+    #[allow(dead_code)]
+    message: String,
 
     #[serde(alias = "status")]
-    _status: String,
+    #[allow(dead_code)]
+    status: String,
 }
 
 #[cfg(test)]
