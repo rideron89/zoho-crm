@@ -220,8 +220,41 @@ impl Client {
 
     /// Make a POST request to the Zoho server.
     ///
-    /// TODO: needs to handle error responses from Zoho.
-    pub fn post(&mut self, path: &str, data: HashMap<String, String>) -> Result<(), ClientError> {
+    /// It is important to note that this method *may* mask errors with a successful response.
+    /// That is because record specific errors will be shown alongside the record in the response.
+    /// We do not want to assume this is an *unsuccessful* response, and so it is up to you to
+    /// handle them.
+    ///
+    /// You can handle the response from this method with something like the following:
+    ///
+    /// ```no_run
+    /// # use serde::Deserialize;
+    /// # use std::collections::HashMap;
+    /// # use zoho_crm::ZohoClient;
+    /// # let client_id = String::from("");
+    /// # let client_secret = String::from("");
+    /// # let refresh_token = String::from("");
+    /// # let mut zoho_client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// # #[derive(Deserialize)]
+    /// struct SampleRecord {
+    ///     id: Option<String>,
+    ///     name: String,
+    /// }
+    ///
+    /// let mut record: HashMap<&str, &str> = HashMap::new();
+    /// record.insert("name", "sample");
+    ///
+    /// let response = zoho_client.post::<SampleRecord>("/crm/v2/Accounts", vec![record]).unwrap();
+    ///
+    /// for record in response.data {
+    ///     match record.code.as_str() {
+    ///         "SUCCESS" => println!("Record was successful"),
+    ///         _ => println!("Record was NOT successful"),
+    ///     }
+    /// }
+    /// ```
+    pub fn post<T: serde::de::DeserializeOwned>(&mut self, path: &str, data: Vec<HashMap<&str, &str>>)
+        -> Result<ApiSuccessResponse<T>, ClientError> {
          if self.access_token.is_none() {
             self.get_new_token()?;
         }
@@ -240,10 +273,22 @@ impl Client {
             .header("Authorization", String::from("Zoho-oauthtoken") + &token)
             .json(&data)
             .send()?;
+        let raw_response = response.text()?;
 
-        let data = response.json()?;
+        if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
+            return Err(ClientError::General(response.code));
+        }
 
-        Ok(data)
+        match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
+            Ok(response) => Ok(response),
+            Err(_) => {
+                if raw_response.len() > 0 {
+                    Err(ClientError::General(raw_response))
+                } else {
+                    Err(ClientError::General(String::from("Empty response")))
+                }
+            },
+        }
     }
 
     /// Make a PUT request to the Zoho server.
@@ -278,9 +323,22 @@ impl Client {
 /// This is one possible error response that Zoho might send back when requesting a token. If
 /// the API response contains an `error` field, it will be treated as an `AuthErrorResponse`
 /// and should be handled accordingly.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct AuthErrorResponse {
     error: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ApiSuccessResponse<T> {
+    pub data: Vec<ApiSuccessResponseDataItem<T>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ApiSuccessResponseDataItem<T> {
+    pub code: String,
+    pub details: T,
+    pub message: String,
+    pub status: String,
 }
 
 /// This is one possible error response that Zoho might send back from an API request. It is
@@ -290,7 +348,7 @@ struct AuthErrorResponse {
 /// `status` will return a text status: "error" on error.
 ///
 /// There is also a `data` field we are not capturing.
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 struct ApiErrorResponse {
     code: String,
 
