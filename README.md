@@ -1,6 +1,6 @@
 # zoho-rs
 
-Zoho CRM client built in Rust. This tool allows programmers to interact with the Zoho CRM API.
+Library to help interact with v2 of the Zoho CRM API.
 
 ## Description & Examples
 

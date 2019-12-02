@@ -20,14 +20,14 @@ const DEFAULT_TIMEOUT: u64 = 30;
 /// This can be useful if you are keeping track of you access tokens in a database, for example. You will need an API client ID, secret, and refresh token.
 ///
 /// You can read more information here:
-/// https://www.zoho.com/crm/developer/docs/api/oauth-overview.html
-///
-/// You should create a client with the `with_creds()` method.
+/// [https://www.zoho.com/crm/developer/docs/api/oauth-overview.html](https://www.zoho.com/crm/developer/docs/api/oauth-overview.html)
 ///
 /// ### Example
 ///
+/// You should create a client with the `with_creds()` method.
+///
 /// ```
-/// use zoho::ZohoClient;
+/// use zoho_crm::ZohoClient;
 ///
 /// let client_id = "YOUR_CLIENT_ID";
 /// let client_secret = "YOUR_CLIENT_SECRET";
@@ -41,6 +41,9 @@ const DEFAULT_TIMEOUT: u64 = 30;
 ///     String::from(refresh_token)
 /// );
 /// ```
+///
+/// API methods will automatically fetch a new token if one has not been set. This token is then
+/// saved internally to be used on all future requests.
 pub struct Client {
     access_token: Option<String>,
     api_domain: Option<String>,
@@ -74,12 +77,12 @@ impl Client {
 }
 
 impl Client {
-    /// Get the timeout (in seconds) for API requests. Default is 30 seconds.
+    /// Get the timeout (in seconds) for API requests.
     pub fn timeout(&self) -> u64 {
         self.timeout
     }
 
-    /// Set the timeout for API requests.
+    /// Set the timeout for API requests. Default is 30 seconds.
     pub fn set_timeout(&mut self, timeout: u64) {
         self.timeout = timeout;
     }
@@ -98,7 +101,7 @@ impl Client {
     /// of the access token should you need to print it out.
     ///
     /// ```
-    /// # use zoho::ZohoClient;
+    /// # use zoho_crm::ZohoClient;
     /// let token = "1000.ad8f97a9sd7f9a7sdf7a89s7df87a9s8.a77fd8a97fa89sd7f89a7sdf97a89df3";
     /// # let client_id = String::from("YOUR_CLIENT_ID");
     /// # let client_secret = String::from("YOUR_CLIENT_SECRET");
@@ -106,7 +109,7 @@ impl Client {
     ///
     /// # let mut client = ZohoClient::with_creds(Some(token.to_string()), None, client_id, client_secret, refresh_token);
     ///
-    /// assert_eq!("1000.ad8f..9df3".to_string(), client.abbreviated_access_token().unwrap());
+    /// assert_eq!("1000.ad8f..9df3", &client.abbreviated_access_token().unwrap());
     /// ```
     pub fn abbreviated_access_token(&self) -> Option<String> {
         match &self.access_token {
