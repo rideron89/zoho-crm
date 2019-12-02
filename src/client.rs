@@ -212,7 +212,7 @@ impl Client {
                 if raw_response.len() > 0 {
                     Err(ClientError::General(raw_response))
                 } else {
-                    Err(ClientError::General(String::from("Unknown error response returned")))
+                    Err(ClientError::General(String::from("Empty response")))
                 }
             },
         }
