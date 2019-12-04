@@ -241,7 +241,75 @@ impl Client {
         }
     }
 
-        let url = self.api_domain().unwrap() + path;
+    /// Fetches a page of records from Zoho.
+    ///
+    /// Zoho API function documentation:
+    /// [https://www.zoho.com/crm/developer/docs/api/get-records.html](https://www.zoho.com/crm/developer/docs/api/get-records.html)
+    ///
+    /// ### Example
+    ///
+    /// ```no_run
+    /// # use serde::Deserialize;
+    /// # use std::collections::HashMap;
+    /// use zoho_crm::ZohoClient;
+    ///
+    /// #[derive(Deserialize)]
+    /// struct Account {
+    ///     name: String,
+    /// }
+    ///
+    /// # let client_id = String::from("");
+    /// # let client_secret = String::from("");
+    /// # let refresh_token = String::from("");
+    ///
+    /// let mut client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    ///
+    /// let accounts = client.get_many::<Account>("Accounts", None).unwrap();
+    /// ```
+    ///
+    /// ### Example with parameters
+    ///
+    /// ```no_run
+    /// # use serde::Deserialize;
+    /// # use std::collections::HashMap;
+    /// use zoho_crm::{parse_params, ZohoClient};
+    ///
+    /// #[derive(Deserialize)]
+    /// struct Account {
+    ///     name: String,
+    /// }
+    ///
+    /// # let client_id = String::from("");
+    /// # let client_secret = String::from("");
+    /// # let refresh_token = String::from("");
+    ///
+    /// # let mut client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    ///
+    /// let mut params: HashMap<&str, &str> = HashMap::new();
+    /// params.insert("cvid", "YOUR_VIEW_ID_HERE");
+    /// params.insert("page", "2");
+    /// params.insert("per_page", "50");
+    ///
+    /// let params = parse_params(params).unwrap();
+    /// let accounts = client.get_many::<Account>("Accounts", Some(params)).unwrap();
+    /// ```
+    pub fn get_many<T: serde::de::DeserializeOwned>(&mut self, module: &str, params: Option<String>) -> Result<ApiGetManyResponse<T>, ClientError> {
+        if self.access_token.is_none() {
+            self.get_new_token()?;
+        }
+
+        // we are guaranteed a token when we reach this line
+        let token = self.access_token().unwrap();
+        let api_domain = self.api_domain().unwrap();
+
+        let timeout = Duration::from_secs(self.timeout);
+        let client = reqwest::Client::builder().timeout(timeout).build()?;
+
+        let mut url = format!("{}/crm/v2/{}", api_domain, module);
+
+        if params.is_none() == false {
+            url = url + &format!("?{}", params.unwrap());
+        }
 
         let mut response = client
             .get(url.as_str())
@@ -253,7 +321,7 @@ impl Client {
             return Err(ClientError::General(response.code));
         }
 
-        match serde_json::from_str::<T>(&raw_response) {
+        match serde_json::from_str::<ApiGetManyResponse<T>>(&raw_response) {
             Ok(data) => Ok(data),
             Err(_) => {
                 if raw_response.len() > 0 {
@@ -403,6 +471,25 @@ pub fn parse_params(params: impl serde::ser::Serialize) -> Result<String, serde_
 #[derive(Debug, Deserialize)]
 pub struct ApiGetResponse<T> {
     pub data: Vec<T>,
+}
+
+/// Wrapper around a successful response using the `get_many()` method.
+///
+/// Because Zoho always sends the last page of data after reaching the end, you should use
+/// something like the following to determine when to stop fetching:
+#[derive(Debug, Deserialize)]
+pub struct ApiGetManyResponse<T> {
+    pub data: Vec<T>,
+    pub info: ApiGetManyResponseInfo,
+}
+
+/// Meta data sent back with the `get_many()` method.
+#[derive(Debug, Deserialize)]
+pub struct ApiGetManyResponseInfo {
+    count: usize,
+    more_records: bool,
+    page: usize,
+    per_page: usize,
 }
 
 /// This is one possible error response that Zoho might send back when requesting a token. If
