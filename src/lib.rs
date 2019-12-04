@@ -7,7 +7,8 @@
 //!
 //! If you plan on converting response records to custom structs, I highly recommend using `serde`:
 //!
-//! ```no_run
+//! ```toml
+//! [dependencies]
 //! serde = { version = "1.0", features = ["derive"] }
 //! ```
 //!
