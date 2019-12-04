@@ -317,6 +317,38 @@ impl Client {
     }
 }
 
+/// Utility function to help convert any serializable object into a URL-encoded string.
+///
+/// This should be passed into any method that supports URL-encoded parameters (such as
+/// `get_many()`).
+///
+/// ### Example
+///
+/// ```no_run
+/// # use serde::Deserialize;
+/// # use std::collections::HashMap;
+/// # use zoho_crm::{parse_params, ZohoClient};
+///
+/// # #[derive(Deserialize)]
+/// # struct Record {
+/// #     id: String,
+/// # }
+///
+/// # let mut client = ZohoClient::with_creds(None, None, String::from(""), String::from(""), String::from(""));
+///
+/// let mut params: HashMap<&str, &str> = HashMap::new();
+/// params.insert("page", "2");
+///
+/// let params = parse_params(params).unwrap();
+/// assert_eq!("page=2", &params);
+///
+/// client.get_many::<Record>("Accounts", Some(params)).unwrap();
+/// ```
+#[allow(dead_code)]
+pub fn parse_params(params: impl serde::ser::Serialize) -> Result<String, serde_urlencoded::ser::Error> {
+    serde_urlencoded::to_string(params)
+}
+
 /// This is one possible error response that Zoho might send back when requesting a token. If
 /// the API response contains an `error` field, it will be treated as an `AuthErrorResponse`
 /// and should be handled accordingly.
@@ -371,13 +403,9 @@ mod tests {
 
     use mockito::{mock, Matcher, Mock};
     use super::Client;
+    use super::parse_params;
     use serde::Deserialize;
-
-    #[derive(Debug, Deserialize)]
-    struct Response {
-        data: Vec<ResponseDataItem>,
-        info: ResponseInfo,
-    }
+    use std::collections::HashMap;
 
     #[derive(Debug, Deserialize)]
     struct ResponseDataItem {
@@ -608,5 +636,22 @@ mod tests {
         }
 
         mocker.assert();
+    }
+
+    #[test]
+    fn test_parse_params() {
+        let mut params: HashMap<&str, &str> = HashMap::new();
+        params.insert("cvid", "00000");
+        params.insert("page", "2");
+
+        let converted = parse_params(params).unwrap();
+
+        match converted.as_str() {
+            "page=2&cvid=00000" => (),
+            "cvid=00000&page=2" => (),
+            _ => {
+                panic!("Params did not convert properly");
+            }
+        }
     }
 }
