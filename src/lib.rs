@@ -36,7 +36,7 @@
 //!     name: String,
 //! }
 //!
-//! let _accounts = client.get::<Vec<Account>>("/crm/v2/Accounts").unwrap();
+//! let account = client.get::<Account>("Accounts", "ZOHO_ID_HERE").unwrap();
 //! ```
 
 extern crate reqwest;

@@ -174,12 +174,39 @@ impl Client {
         }
     }
 
-    /// Make a GET request to the Zoho server.
+    /// Fetches a record from Zoho.
     ///
-    /// Will attempt to return a `ClientError::General` with the response code if the
-    /// request fails. If the response from Zoho is not valid JSON, a `ClientError::General`
-    /// with the raw response will be returned.
-    pub fn get<T: serde::de::DeserializeOwned>(&mut self, path: &str) -> Result<T, ClientError> {
+    /// Zoho returns a data array with this method, even though that array will always be of
+    /// length-0. We return the data array, so you must treat the response accordingly.
+    ///
+    /// If an error occurred, and we are given a response code back, this method will return a
+    /// `ClientError::General` with the response code. Otherwise, an error will be returned with
+    /// the raw response text.
+    ///
+    /// ### Example
+    ///
+    /// ```no_run
+    /// # use serde::Deserialize;
+    /// # use std::collections::HashMap;
+    /// use zoho_crm::ZohoClient;
+    ///
+    /// #[derive(Deserialize)]
+    /// struct Account {
+    ///     name: String,
+    /// }
+    ///
+    /// # let client_id = String::from("");
+    /// # let client_secret = String::from("");
+    /// # let refresh_token = String::from("");
+    ///
+    /// let mut client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    ///
+    /// let response = client.get::<Account>("Accounts", "ZOHO_ID_HERE").unwrap();
+    ///
+    /// let account = response.data.get(0).unwrap();
+    /// assert_eq!(account.name, "Account name");
+    /// ```
+    pub fn get<T: serde::de::DeserializeOwned>(&mut self, module: &str, id: &str) -> Result<ApiGetResponse<T>, ClientError> {
         if self.access_token.is_none() {
             self.get_new_token()?;
         }
@@ -187,9 +214,32 @@ impl Client {
         // we are guaranteed a token when we reach this line
         let token = self.access_token.clone().unwrap();
 
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(self.timeout))
-            .build()?;
+        let timeout = Duration::from_secs(self.timeout);
+        let client = reqwest::Client::builder().timeout(timeout).build()?;
+
+        let url = format!("{}/crm/v2/{}/{}", self.api_domain().unwrap(), module, id);
+
+        let mut response = client
+            .get(url.as_str())
+            .header("Authorization", format!("Zoho-oauthtoken {}", token))
+            .send()?;
+        let raw_response = response.text()?;
+
+        if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
+            return Err(ClientError::General(response.code));
+        }
+
+        match serde_json::from_str::<ApiGetResponse<T>>(&raw_response) {
+            Ok(data) => Ok(data),
+            Err(_) => {
+                if raw_response.len() > 0 {
+                    Err(ClientError::General(raw_response))
+                } else {
+                    Err(ClientError::General(String::from("Empty response")))
+                }
+            },
+        }
+    }
 
         let url = self.api_domain().unwrap() + path;
 
@@ -349,6 +399,12 @@ pub fn parse_params(params: impl serde::ser::Serialize) -> Result<String, serde_
     serde_urlencoded::to_string(params)
 }
 
+/// Wrapper around a successful response using the `get()` method.
+#[derive(Debug, Deserialize)]
+pub struct ApiGetResponse<T> {
+    pub data: Vec<T>,
+}
+
 /// This is one possible error response that Zoho might send back when requesting a token. If
 /// the API response contains an `error` field, it will be treated as an `AuthErrorResponse`
 /// and should be handled accordingly.
@@ -408,16 +464,8 @@ mod tests {
     use std::collections::HashMap;
 
     #[derive(Debug, Deserialize)]
-    struct ResponseDataItem {
+    struct ResponseRecord {
         id: String,
-    }
-
-    #[derive(Debug, Deserialize)]
-    struct ResponseInfo {
-        more_records: bool,
-        per_page: usize,
-        count: usize,
-        page: usize,
     }
 
     /// Get a `Client` with an access token.
@@ -592,7 +640,7 @@ mod tests {
         let mocker = get_mocker("GET", Matcher::Any, Some(&body));
         let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
 
-        let response: Response = client.get("/crm/v2/Accounts?page=1&per_page=1").unwrap();
+        let response = client.get::<ResponseRecord>("Accounts", record_id).unwrap();
 
         mocker.assert();
         assert_eq!(response.data.get(0).unwrap().id, record_id);
@@ -608,7 +656,7 @@ mod tests {
         let mocker = get_mocker("GET", Matcher::Any, Some(&body));
         let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
 
-        match client.get::<Response>("/crm/v2/INVALIDMODULE?page=1&per_page=1") {
+        match client.get::<ResponseRecord>("INVALID_MODULE", "00000") {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
                 assert_eq!(err.to_string(), error_code.to_string());
@@ -628,7 +676,7 @@ mod tests {
         let mocker = get_mocker("GET", Matcher::Any, Some(&body));
         let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
 
-        match client.get::<Response>("/crm/v2/INVALIDMODULE?page=1&per_page=1") {
+        match client.get::<ResponseRecord>("INVALID_MODULE", "00000") {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
                 assert_eq!(err.to_string(), error_code.to_string());
