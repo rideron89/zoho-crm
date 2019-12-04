@@ -40,6 +40,7 @@
 //! ```
 
 extern crate reqwest;
+extern crate serde_urlencoded;
 
 mod client_error;
 mod client;
