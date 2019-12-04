@@ -358,6 +358,13 @@ struct ApiErrorResponse {
     status: String,
 }
 
+impl ApiErrorResponse {
+    #[allow(dead_code)]
+    pub fn to_string(&self) -> String {
+        format!("[{}] {}", self.code, self.message)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     extern crate mockito;
