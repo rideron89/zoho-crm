@@ -21,7 +21,7 @@ const DEFAULT_TIMEOUT: u64 = 30;
 ///
 /// ### Example
 ///
-/// You should create a client with the `with_creds()` method.
+/// You should create a [`Client`](struct.Client) with the [`with_creds()`](struct.Client.html#method.with_creds) method.
 ///
 /// ```
 /// use zoho_crm::Client;
@@ -142,7 +142,7 @@ impl Client {
     /// Get a new access token from Zoho. Guarantees an access token when it returns
     /// an `Result::Ok`.
     ///
-    /// The access token is saved to the `Client`, so you don't
+    /// The access token is saved to the [`Client`](struct.Client), so you don't
     /// need to retrieve the token and set it in different steps. But a copy
     /// of it is returned by this method.
     pub fn get_new_token(&mut self) -> Result<TokenRecord, ClientError> {
@@ -180,7 +180,7 @@ impl Client {
     /// length-0. We return the data array, so you must treat the response accordingly.
     ///
     /// If an error occurred, and we are given a response code back, this method will return a
-    /// `ClientError::General` with the response code. Otherwise, an error will be returned with
+    /// [`ClientError::General`](enum.ClientError.html#variant.General) with the response code. Otherwise, an error will be returned with
     /// the raw response text.
     ///
     /// ### Example
@@ -198,7 +198,6 @@ impl Client {
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
-    ///
     /// let mut client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
     ///
     /// let response = client.get::<Account>("Accounts", "ZOHO_ID_HERE").unwrap();
@@ -261,7 +260,6 @@ impl Client {
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
-    ///
     /// let mut client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
     ///
     /// let accounts = client.get_many::<Account>("Accounts", None).unwrap();
@@ -347,7 +345,6 @@ impl Client {
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
     /// # use zoho_crm::Client;
-    ///
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
@@ -422,7 +419,6 @@ impl Client {
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
     /// # use zoho_crm::Client;
-    ///
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
@@ -485,8 +481,8 @@ impl Client {
 
 /// Utility function to help a parameter list into a URL-encoded string.
 ///
-/// This should be passed into any method that supports URL-encoded parameters (such as
-/// `get_many()`).
+/// This should be passed into any method that supports URL-encoded parameters, such as
+/// [`get_many`](struct.Client.html#method.get_many).
 ///
 /// ### Example
 ///
