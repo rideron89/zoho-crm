@@ -16,19 +16,29 @@ To handle parsing response records, you will also need deserializable objects wi
 serde = { version = "1.0", features = ["derive"] }
 ```
 
-let client_id = "YOUR_CLIENT_ID";
-let client_secret = "YOUR_CLIENT_SECRET";
-let refresh_token = "YOUR_REFRESH_TOKEN";
+## Example
 
-let client = ZohoClient::with_creds(
+```rust
+use serde::Deserialize;
+use zoho_crm::ZohoClient;
+
+let client_id = String::from("YOUR_CLIENT_ID");
+let client_secret = String::from("YOUR_CLIENT_SECRET");
+let refresh_token = String::from("YOUR_REFRESH_TOKEN");
+
+let mut client = ZohoClient::with_creds(
     None, // access token
     None, // api domain
-    String::from(client_id),
-    String::from(client_secret),
-    String::from(refresh_token)
+    client_id,
+    client_secret,
+    refresh_token
 );
+
+#[derive(Debug, Deserialize)]
+struct Account {
+    id: String,
+    name: String,
+}
+
+let account = client.get::<Account>("Accounts", "ZOHO_ID_HERE").unwrap();
 ```
-
-## Roadmap
-
-- [ ] Gracefully handle errors thrown back from Zoho
