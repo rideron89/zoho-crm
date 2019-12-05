@@ -333,6 +333,80 @@ impl Client {
         }
     }
 
+    /// Insert multiple records in Zoho.
+    ///
+    /// Zoho API function documentation:
+    /// [https://www.zoho.com/crm/developer/docs/api/insert-records.html](https://www.zoho.com/crm/developer/docs/api/insert-records.html)
+    ///
+    /// It is important to note that this method *may* mask errors with a successful response.
+    /// That is because record specific errors will be shown alongside the record in the response.
+    /// We do not want to assume this is an *unsuccessful* response, and so it is up to you to
+    /// handle them.
+    ///
+    /// ```no_run
+    /// # use serde::Deserialize;
+    /// # use std::collections::HashMap;
+    /// # use zoho_crm::ZohoClient;
+    /// # let client_id = String::from("");
+    /// # let client_secret = String::from("");
+    /// # let refresh_token = String::from("");
+    /// # let mut zoho_client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// # #[derive(Deserialize)]
+    /// struct SampleRecord {
+    ///     id: String,
+    ///     name: String,
+    /// }
+    ///
+    /// let mut record: HashMap<&str, &str> = HashMap::new();
+    /// record.insert("name", "sample");
+    ///
+    /// let response = zoho_client.insert::<SampleRecord>("Accounts", vec![record]).unwrap();
+    ///
+    /// for record in response.data {
+    ///     match record.code.as_str() {
+    ///         "SUCCESS" => println!("Record was successful"),
+    ///         _ => println!("Record was NOT successful"),
+    ///     }
+    /// }
+    /// ```
+    pub fn insert<T: serde::de::DeserializeOwned>(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse<T>, ClientError> {
+        if self.access_token.is_none() {
+           self.get_new_token()?;
+       }
+
+       // we are guaranteed a token when we reach this line
+       let token = self.access_token().unwrap();
+       let api_domain = self.api_domain().unwrap();
+
+       let client = reqwest::Client::builder()
+           .timeout(Duration::from_secs(self.timeout))
+           .build()?;
+
+       let url = format!("{}/crm/v2/{}", api_domain, module);
+
+       let mut response = client
+           .post(url.as_str())
+           .header("Authorization", String::from("Zoho-oauthtoken") + &token)
+           .json(&data)
+           .send()?;
+       let raw_response = response.text()?;
+
+       if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
+           return Err(ClientError::General(response.code));
+       }
+
+       match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
+           Ok(response) => Ok(response),
+           Err(_) => {
+               if raw_response.len() > 0 {
+                   Err(ClientError::General(raw_response))
+               } else {
+                   Err(ClientError::General(String::from("Empty response")))
+               }
+           },
+       }
+   }
+
     /// Updates multiple records in Zoho.
     ///
     /// Zoho API function documentation:
@@ -385,80 +459,6 @@ impl Client {
 
         let mut response = client
             .put(url.as_str())
-            .header("Authorization", String::from("Zoho-oauthtoken") + &token)
-            .json(&data)
-            .send()?;
-        let raw_response = response.text()?;
-
-        if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
-            return Err(ClientError::General(response.code));
-        }
-
-        match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
-            Ok(response) => Ok(response),
-            Err(_) => {
-                if raw_response.len() > 0 {
-                    Err(ClientError::General(raw_response))
-                } else {
-                    Err(ClientError::General(String::from("Empty response")))
-                }
-            },
-        }
-    }
-
-    /// Insert multiple records in Zoho.
-    ///
-    /// Zoho API function documentation:
-    /// [https://www.zoho.com/crm/developer/docs/api/insert-records.html](https://www.zoho.com/crm/developer/docs/api/insert-records.html)
-    ///
-    /// It is important to note that this method *may* mask errors with a successful response.
-    /// That is because record specific errors will be shown alongside the record in the response.
-    /// We do not want to assume this is an *unsuccessful* response, and so it is up to you to
-    /// handle them.
-    ///
-    /// ```no_run
-    /// # use serde::Deserialize;
-    /// # use std::collections::HashMap;
-    /// # use zoho_crm::ZohoClient;
-    /// # let client_id = String::from("");
-    /// # let client_secret = String::from("");
-    /// # let refresh_token = String::from("");
-    /// # let mut zoho_client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
-    /// # #[derive(Deserialize)]
-    /// struct SampleRecord {
-    ///     id: String,
-    ///     name: String,
-    /// }
-    ///
-    /// let mut record: HashMap<&str, &str> = HashMap::new();
-    /// record.insert("name", "sample");
-    ///
-    /// let response = zoho_client.insert::<SampleRecord>("Accounts", vec![record]).unwrap();
-    ///
-    /// for record in response.data {
-    ///     match record.code.as_str() {
-    ///         "SUCCESS" => println!("Record was successful"),
-    ///         _ => println!("Record was NOT successful"),
-    ///     }
-    /// }
-    /// ```
-    pub fn insert<T: serde::de::DeserializeOwned>(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse<T>, ClientError> {
-         if self.access_token.is_none() {
-            self.get_new_token()?;
-        }
-
-        // we are guaranteed a token when we reach this line
-        let token = self.access_token().unwrap();
-        let api_domain = self.api_domain().unwrap();
-
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(self.timeout))
-            .build()?;
-
-        let url = format!("{}/crm/v2/{}", api_domain, module);
-
-        let mut response = client
-            .post(url.as_str())
             .header("Authorization", String::from("Zoho-oauthtoken") + &token)
             .json(&data)
             .send()?;
