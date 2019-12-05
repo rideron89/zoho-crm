@@ -333,6 +333,79 @@ impl Client {
         }
     }
 
+    /// Updates multiple records in Zoho.
+    ///
+    /// Zoho API function documentation:
+    /// [https://www.zoho.com/crm/developer/docs/api/update-records.html](https://www.zoho.com/crm/developer/docs/api/update-records.html)
+    ///
+    /// It is important to note that this method *may* mask errors with a successful response.
+    /// That is because record specific errors will be shown alongside the record in the response.
+    /// We do not want to assume this is an *unsuccessful* response, and so it is up to you to
+    /// handle them.
+    ///
+    /// ```no_run
+    /// # use serde::Deserialize;
+    /// # use std::collections::HashMap;
+    /// # use zoho_crm::ZohoClient;
+    /// # let client_id = String::from("");
+    /// # let client_secret = String::from("");
+    /// # let refresh_token = String::from("");
+    /// # let mut zoho_client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// # #[derive(Deserialize)]
+    /// struct SampleRecord {
+    ///     name: String,
+    /// }
+    ///
+    /// let mut record: HashMap<&str, &str> = HashMap::new();
+    /// record.insert("id", "ZOHO_RECORD_IT_HERE");
+    /// record.insert("name", "sample");
+    ///
+    /// let response = zoho_client.update_many::<SampleRecord>("Accounts", vec![record]).unwrap();
+    ///
+    /// for record in response.data {
+    ///     match record.code.as_str() {
+    ///         "SUCCESS" => println!("Record was successful"),
+    ///         _ => println!("Record was NOT successful"),
+    ///     }
+    /// }
+    /// ```
+    pub fn update_many<T: serde::de::DeserializeOwned>(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse<T>, ClientError> {
+        if self.access_token.is_none() {
+            self.get_new_token()?;
+        }
+
+        // we are guaranteed a token when we reach this line
+        let token = self.access_token().unwrap();
+        let api_domain = self.api_domain().unwrap();
+
+        let timeout = Duration::from_secs(self.timeout);
+        let client = reqwest::Client::builder().timeout(timeout).build()?;
+
+        let url = format!("{}/crm/v2/{}", api_domain, module);
+
+        let mut response = client
+            .put(url.as_str())
+            .header("Authorization", String::from("Zoho-oauthtoken") + &token)
+            .json(&data)
+            .send()?;
+        let raw_response = response.text()?;
+
+        if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
+            return Err(ClientError::General(response.code));
+        }
+
+        match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
+            Ok(response) => Ok(response),
+            Err(_) => {
+                if raw_response.len() > 0 {
+                    Err(ClientError::General(raw_response))
+                } else {
+                    Err(ClientError::General(String::from("Empty response")))
+                }
+            },
+        }
+    }
+
     /// Make a POST request to the Zoho server.
     ///
     /// It is important to note that this method *may* mask errors with a successful response.
@@ -764,6 +837,70 @@ mod tests {
         let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
 
         match client.get::<ResponseRecord>("INVALID_MODULE", "00000") {
+            Ok(_) => panic!("Response did not return an error"),
+            Err(err) => {
+                assert_eq!(err.to_string(), error_code.to_string());
+            }
+        }
+
+        mocker.assert();
+    }
+
+    #[test]
+    fn update_many_success() {
+        let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let api_domain = mockito::server_url();
+        let record_id = "40000000123456789";
+        let body = format!(r#"{{"data":[{{"code":"SUCCESS","details":{{"id":"{}","name":"Record Name"}},"message":"record updated","status":"success"}}]}}"#, record_id);
+        let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
+        let mut client = get_client(Some(access_token.to_string()), Some(api_domain.to_string()));
+
+        let mut record: HashMap<&str, &str> = HashMap::new();
+        record.insert("name", "New Record Name");
+
+        let response = client.update_many::<ResponseRecord>("Accounts", vec![record]).unwrap();
+
+        mocker.assert();
+        assert_eq!(response.data.get(0).unwrap().details.id, record_id);
+    }
+
+    #[test]
+    /// Tests that an error code returned via the `update_many()` method returns an error.
+    fn update_regular_error() {
+        let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let api_domain = mockito::server_url();
+        let error_code = "INVALID_MODULE";
+        let body = format!(r#"{{"code":"{}","details":{{}},"message":"Please check if the URL trying to access is a correct one","status":"error"}}"#, error_code);
+        let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
+        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+
+        let mut record: HashMap<&str, &str> = HashMap::new();
+        record.insert("name", "New Record Name");
+
+        match client.update_many::<ResponseRecord>("INVALID_MODULE", vec![record]) {
+            Ok(_) => panic!("Response did not return an error"),
+            Err(err) => {
+                assert_eq!(err.to_string(), error_code.to_string());
+            }
+        }
+
+        mocker.assert();
+    }
+
+    #[test]
+    /// Tests that a plain error message returned via the `update_many()` method returns an error.
+    fn update_many_text_error() {
+        let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        let api_domain = mockito::server_url();
+        let error_code = "invalid_client";
+        let body = format!("{}", error_code);
+        let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
+        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+
+        let mut record: HashMap<&str, &str> = HashMap::new();
+        record.insert("name", "New Record Name");
+
+        match client.update_many::<ResponseRecord>("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
                 assert_eq!(err.to_string(), error_code.to_string());
