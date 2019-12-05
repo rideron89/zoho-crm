@@ -24,13 +24,13 @@ const DEFAULT_TIMEOUT: u64 = 30;
 /// You should create a client with the `with_creds()` method.
 ///
 /// ```
-/// use zoho_crm::ZohoClient;
+/// use zoho_crm::Client;
 ///
 /// let client_id = "YOUR_CLIENT_ID";
 /// let client_secret = "YOUR_CLIENT_SECRET";
 /// let refresh_token = "YOUR_REFRESH_TOKEN";
 ///
-/// let client = ZohoClient::with_creds(
+/// let client = Client::with_creds(
 ///     None, // access token
 ///     None, // api domain
 ///     String::from(client_id),
@@ -98,13 +98,13 @@ impl Client {
     /// of the access token should you need to print it out.
     ///
     /// ```
-    /// # use zoho_crm::ZohoClient;
+    /// # use zoho_crm::Client;
     /// let token = "1000.ad8f97a9sd7f9a7sdf7a89s7df87a9s8.a77fd8a97fa89sd7f89a7sdf97a89df3";
     /// # let client_id = String::from("YOUR_CLIENT_ID");
     /// # let client_secret = String::from("YOUR_CLIENT_SECRET");
     /// # let refresh_token = String::from("YOUR_REFRESH_TOKEN");
     ///
-    /// # let mut client = ZohoClient::with_creds(Some(token.to_string()), None, client_id, client_secret, refresh_token);
+    /// # let mut client = Client::with_creds(Some(token.to_string()), None, client_id, client_secret, refresh_token);
     ///
     /// assert_eq!("1000.ad8f..9df3", &client.abbreviated_access_token().unwrap());
     /// ```
@@ -142,7 +142,7 @@ impl Client {
     /// Get a new access token from Zoho. Guarantees an access token when it returns
     /// an `Result::Ok`.
     ///
-    /// The access token is saved to the `ZohoClient`, so you don't
+    /// The access token is saved to the `Client`, so you don't
     /// need to retrieve the token and set it in different steps. But a copy
     /// of it is returned by this method.
     pub fn get_new_token(&mut self) -> Result<TokenRecord, ClientError> {
@@ -188,7 +188,7 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// use zoho_crm::ZohoClient;
+    /// use zoho_crm::Client;
     ///
     /// #[derive(Deserialize)]
     /// struct Account {
@@ -199,7 +199,7 @@ impl Client {
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
     ///
-    /// let mut client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// let mut client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
     ///
     /// let response = client.get::<Account>("Accounts", "ZOHO_ID_HERE").unwrap();
     ///
@@ -251,7 +251,7 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// use zoho_crm::ZohoClient;
+    /// use zoho_crm::Client;
     ///
     /// #[derive(Deserialize)]
     /// struct Account {
@@ -262,7 +262,7 @@ impl Client {
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
     ///
-    /// let mut client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// let mut client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
     ///
     /// let accounts = client.get_many::<Account>("Accounts", None).unwrap();
     /// ```
@@ -272,7 +272,7 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// use zoho_crm::{parse_params, ZohoClient};
+    /// use zoho_crm::{parse_params, Client};
     ///
     /// #[derive(Deserialize)]
     /// struct Account {
@@ -283,7 +283,7 @@ impl Client {
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
     ///
-    /// # let mut client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// # let mut client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
     ///
     /// let mut params: HashMap<&str, &str> = HashMap::new();
     /// params.insert("cvid", "YOUR_VIEW_ID_HERE");
@@ -346,11 +346,12 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// # use zoho_crm::ZohoClient;
+    /// # use zoho_crm::Client;
+    ///
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
-    /// # let mut zoho_client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// # let mut zoho_client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
     /// # #[derive(Deserialize)]
     /// struct SampleRecord {
     ///     id: String,
@@ -420,11 +421,12 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// # use zoho_crm::ZohoClient;
+    /// # use zoho_crm::Client;
+    ///
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
-    /// # let mut zoho_client = ZohoClient::with_creds(None, None, client_id, client_secret, refresh_token);
+    /// # let mut zoho_client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
     /// # #[derive(Deserialize)]
     /// struct SampleRecord {
     ///     name: String,
@@ -481,7 +483,7 @@ impl Client {
     }
 }
 
-/// Utility function to help convert any serializable object into a URL-encoded string.
+/// Utility function to help a parameter list into a URL-encoded string.
 ///
 /// This should be passed into any method that supports URL-encoded parameters (such as
 /// `get_many()`).
@@ -491,14 +493,14 @@ impl Client {
 /// ```no_run
 /// # use serde::Deserialize;
 /// # use std::collections::HashMap;
-/// # use zoho_crm::{parse_params, ZohoClient};
+/// # use zoho_crm::{parse_params, Client};
 ///
 /// # #[derive(Deserialize)]
 /// # struct Record {
 /// #     id: String,
 /// # }
 ///
-/// # let mut client = ZohoClient::with_creds(None, None, String::from(""), String::from(""), String::from(""));
+/// # let mut client = Client::with_creds(None, None, String::from(""), String::from(""), String::from(""));
 ///
 /// let mut params: HashMap<&str, &str> = HashMap::new();
 /// params.insert("page", "2");

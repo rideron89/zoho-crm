@@ -16,13 +16,13 @@
 //!
 //! ```no_run
 //! use serde::Deserialize;
-//! use zoho_crm::ZohoClient;
+//! use zoho_crm::Client;
 //!
 //! let client_id = String::from("YOUR_CLIENT_ID");
 //! let client_secret = String::from("YOUR_CLIENT_SECRET");
 //! let refresh_token = String::from("YOUR_REFRESH_TOKEN");
 //!
-//! let mut client = ZohoClient::with_creds(
+//! let mut client = Client::with_creds(
 //!     None, // access token
 //!     None, // api domain
 //!     client_id,
@@ -48,7 +48,7 @@ mod client_error;
 mod client;
 mod token_record;
 
-pub use client::Client as ZohoClient;
+pub use client::Client;
 pub use client::parse_params;
-pub use client_error::ClientError as ZohoError;
-pub use token_record::TokenRecord as ZohoToken;
+pub use client_error::ClientError;
+pub use token_record::TokenRecord;
