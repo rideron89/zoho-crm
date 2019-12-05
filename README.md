@@ -9,10 +9,12 @@ You can either create a client with a preset access token, or fetch a new one la
 You can read more information here:
 https://www.zoho.com/crm/developer/docs/api/oauth-overview.html
 
-You should create a client with the `with_creds()` method.
+To handle parsing response records, you will also need deserializable objects with `serde`:
 
+```toml
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
 ```
-use zoho::ZohoClient;
 
 let client_id = "YOUR_CLIENT_ID";
 let client_secret = "YOUR_CLIENT_SECRET";

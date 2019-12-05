@@ -5,7 +5,7 @@
 //! You can read more information about the Zoho API here:
 //! [https://www.zoho.com/crm/developer/docs/api/oauth-overview.html](https://www.zoho.com/crm/developer/docs/api/oauth-overview.html)
 //!
-//! If you plan on converting response records to custom structs, I highly recommend using `serde`:
+//! To handle parsing response records, you will also need deserializable objects with `serde`:
 //!
 //! ```toml
 //! [dependencies]
@@ -15,7 +15,7 @@
 //! ### Example
 //!
 //! ```no_run
-//! use serde::Deserialize; // optional
+//! use serde::Deserialize;
 //! use zoho_crm::ZohoClient;
 //!
 //! let client_id = String::from("YOUR_CLIENT_ID");
@@ -30,7 +30,7 @@
 //!     refresh_token
 //! );
 //!
-//! #[derive(Deserialize)]
+//! #[derive(Debug, Deserialize)]
 //! struct Account {
 //!     id: String,
 //!     name: String,
