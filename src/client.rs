@@ -181,7 +181,8 @@ impl Client {
     ///
     /// If an error occurred, and we are given a response code back, this method will return a
     /// [`ClientError::ApiError`](enum.ClientError.html#variant.ApiError) with the response code
-    /// and message. Otherwise, an error will be returned with the raw response text.
+    /// and message. Otherwise, a [`ClientError::General`](enum.ClientError.html#variant.General)
+    /// error will be returned with the raw response text.
     ///
     /// ### Example
     ///
