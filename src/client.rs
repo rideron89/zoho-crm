@@ -478,34 +478,6 @@ impl Client {
             },
         }
     }
-
-    /// Make a PUT request to the Zoho server.
-    ///
-    /// TODO: needs to handle error responses from Zoho.
-    pub fn put(&mut self, path: &str, data: Vec<HashMap<String, String>>) -> Result<(), ClientError> {
-        if self.access_token.is_none() {
-            self.get_new_token()?;
-        }
-
-        // we are guaranteed a token when we reach this line
-        let token = self.access_token.clone().unwrap();
-
-        let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(self.timeout))
-            .build()?;
-
-        let url = self.api_domain().unwrap() + path;
-
-        let mut response = client
-            .put(url.as_str())
-            .header("Authorization", String::from("Zoho-oauthtoken") + &token)
-            .json(&data)
-            .send()?;
-
-        let data = response.json()?;
-
-        Ok(data)
-    }
 }
 
 /// Utility function to help convert any serializable object into a URL-encoded string.
