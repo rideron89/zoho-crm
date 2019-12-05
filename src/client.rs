@@ -357,7 +357,7 @@ impl Client {
     /// }
     ///
     /// let mut record: HashMap<&str, &str> = HashMap::new();
-    /// record.insert("id", "ZOHO_RECORD_IT_HERE");
+    /// record.insert("id", "ZOHO_RECORD_ID_HERE");
     /// record.insert("name", "sample");
     ///
     /// let response = zoho_client.update_many::<SampleRecord>("Accounts", vec![record]).unwrap();
