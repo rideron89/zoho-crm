@@ -2,7 +2,11 @@ use std::fmt;
 
 #[derive(Debug)]
 pub enum ClientError {
+    /// Error identifying that the previous request was not completed because the access token
+    /// is either invalid or expired.
     NeedsToken(String),
+
+    /// General error message that encompasses almost any non-token related error message.
     General(String)
 }
 
