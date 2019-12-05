@@ -177,7 +177,7 @@ impl Client {
     /// Fetches a record from Zoho.
     ///
     /// Zoho returns a data array with this method, even though that array will always be of
-    /// length-0. We return the data array, so you must treat the response accordingly.
+    /// length-1. We return the data array, so you must treat the response accordingly.
     ///
     /// If an error occurred, and we are given a response code back, this method will return a
     /// [`ClientError::General`](enum.ClientError.html#variant.General) with the response code. Otherwise, an error will be returned with
