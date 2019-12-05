@@ -180,8 +180,8 @@ impl Client {
     /// length-1. We return the data array, so you must treat the response accordingly.
     ///
     /// If an error occurred, and we are given a response code back, this method will return a
-    /// [`ClientError::General`](enum.ClientError.html#variant.General) with the response code. Otherwise, an error will be returned with
-    /// the raw response text.
+    /// [`ClientError::ApiError`](enum.ClientError.html#variant.ApiError) with the response code
+    /// and message. Otherwise, an error will be returned with the raw response text.
     ///
     /// ### Example
     ///
@@ -225,7 +225,7 @@ impl Client {
         let raw_response = response.text()?;
 
         if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
-            return Err(ClientError::General(response.code));
+            return Err(ClientError::ApiError(response));
         }
 
         match serde_json::from_str::<ApiGetResponse<T>>(&raw_response) {
@@ -316,7 +316,7 @@ impl Client {
         let raw_response = response.text()?;
 
         if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
-            return Err(ClientError::General(response.code));
+            return Err(ClientError::ApiError(response));
         }
 
         match serde_json::from_str::<ApiGetManyResponse<T>>(&raw_response) {
@@ -390,7 +390,7 @@ impl Client {
        let raw_response = response.text()?;
 
        if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
-           return Err(ClientError::General(response.code));
+           return Err(ClientError::ApiError(response));
        }
 
        match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
@@ -463,7 +463,7 @@ impl Client {
         let raw_response = response.text()?;
 
         if let Ok(response) = serde_json::from_str::<ApiErrorResponse>(&raw_response) {
-            return Err(ClientError::General(response.code));
+            return Err(ClientError::ApiError(response));
         }
 
         match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
@@ -565,16 +565,15 @@ pub struct ApiSuccessResponseDataItem<T> {
 ///
 /// There is also a `data` field we are not capturing.
 #[derive(Debug, Deserialize)]
-struct ApiErrorResponse {
-    code: String,
-
-    #[serde(alias = "message")]
+pub struct ApiErrorResponse {
     #[allow(dead_code)]
-    message: String,
+    pub code: String,
 
-    #[serde(alias = "status")]
     #[allow(dead_code)]
-    status: String,
+    pub message: String,
+
+    #[allow(dead_code)]
+    pub status: String,
 }
 
 impl ApiErrorResponse {
@@ -589,8 +588,7 @@ mod tests {
     extern crate mockito;
 
     use mockito::{mock, Matcher, Mock};
-    use super::Client;
-    use super::parse_params;
+    use super::*;
     use serde::Deserialize;
     use std::collections::HashMap;
 
@@ -790,7 +788,10 @@ mod tests {
         match client.get::<ResponseRecord>("INVALID_MODULE", "00000") {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
-                assert_eq!(err.to_string(), error_code.to_string());
+                match err {
+                    ClientError::ApiError(error) => assert_eq!(error.code, error_code),
+                    _ => panic!("Wrong error type"),
+                }
             }
         }
 
@@ -852,7 +853,10 @@ mod tests {
         match client.insert::<ResponseRecord>("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
-                assert_eq!(err.to_string(), error_code.to_string());
+                match err {
+                    ClientError::ApiError(error) => assert_eq!(error.code, error_code),
+                    _ => panic!("Wrong error type"),
+                }
             }
         }
 
@@ -917,7 +921,10 @@ mod tests {
         match client.update_many::<ResponseRecord>("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
-                assert_eq!(err.to_string(), error_code.to_string());
+                match err {
+                    ClientError::ApiError(error) => assert_eq!(error.code, error_code),
+                    _ => panic!("Wrong error type"),
+                }
             }
         }
 

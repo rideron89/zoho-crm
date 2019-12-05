@@ -1,5 +1,7 @@
+use crate::client::ApiErrorResponse;
 use std::fmt;
 
+/// Various errors returned by the API.
 #[derive(Debug)]
 pub enum ClientError {
     /// Error identifying that the previous request was not completed because the access token
@@ -7,7 +9,10 @@ pub enum ClientError {
     NeedsToken(String),
 
     /// General error message that encompasses almost any non-token related error message.
-    General(String)
+    General(String),
+
+    /// Error returned from most API requests.
+    ApiError(ApiErrorResponse),
 }
 
 impl ClientError {
@@ -16,6 +21,7 @@ impl ClientError {
         match self {
             ClientError::NeedsToken(error) => error.clone(),
             ClientError::General(error) => error.clone(),
+            ClientError::ApiError(error) => error.to_string(),
         }
     }
 }
@@ -23,8 +29,9 @@ impl ClientError {
 impl fmt::Display for ClientError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ClientError::NeedsToken(desc) => write!(f, "{}", desc),
-            ClientError::General(desc) => write!(f, "{}", desc)
+            ClientError::NeedsToken(error) => write!(f, "{}", error),
+            ClientError::General(error) => write!(f, "{}", error),
+            ClientError::ApiError(error) => write!(f, "{}", error.to_string()),
         }
     }
 }
