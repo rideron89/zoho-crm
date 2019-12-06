@@ -2,6 +2,10 @@ extern crate serde;
 
 use serde::Deserialize;
 
+/// Wrapper around a token sent back from the Zoho service.
+///
+/// Unless you are saving and/or retrieving a token from somewhere other than Zoho (such as
+/// a database), you usually will not need to use this.
 #[derive(Debug, Deserialize)]
 pub struct TokenRecord {
     pub access_token: Option<String>,

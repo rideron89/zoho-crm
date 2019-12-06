@@ -1,6 +1,6 @@
 # zoho-rs
 
-Zoho CRM client built in Rust. This tool allows programmers to interact with the Zoho CRM API.
+Library to help interact with v2 of the Zoho CRM API.
 
 ## Description & Examples
 
@@ -9,24 +9,36 @@ You can either create a client with a preset access token, or fetch a new one la
 You can read more information here:
 https://www.zoho.com/crm/developer/docs/api/oauth-overview.html
 
-You should create a client with the `with_creds()` method.
+To handle parsing response records, you will also need deserializable objects with `serde`:
 
+```toml
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
 ```
-use zoho::ZohoClient;
 
-let client_id = "YOUR_CLIENT_ID";
-let client_secret = "YOUR_CLIENT_SECRET";
-let refresh_token = "YOUR_REFRESH_TOKEN";
+## Example
 
-let client = ZohoClient::with_creds(
+```rust
+use serde::Deserialize;
+use zoho_crm::ZohoClient;
+
+let client_id = String::from("YOUR_CLIENT_ID");
+let client_secret = String::from("YOUR_CLIENT_SECRET");
+let refresh_token = String::from("YOUR_REFRESH_TOKEN");
+
+let mut client = ZohoClient::with_creds(
     None, // access token
     None, // api domain
-    String::from(client_id),
-    String::from(client_secret),
-    String::from(refresh_token)
+    client_id,
+    client_secret,
+    refresh_token
 );
+
+#[derive(Debug, Deserialize)]
+struct Account {
+    id: String,
+    name: String,
+}
+
+let account = client.get::<Account>("Accounts", "ZOHO_ID_HERE").unwrap();
 ```
-
-## Roadmap
-
-- [ ] Gracefully handle errors thrown back from Zoho
