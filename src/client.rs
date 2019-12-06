@@ -233,7 +233,7 @@ impl Client {
             Ok(data) => Ok(data),
             Err(_) => {
                 if raw_response.len() > 0 {
-                    Err(ClientError::General(String::from("Response did not match your data type")))
+                    Err(ClientError::UnexpectedResponseType(raw_response))
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
@@ -324,7 +324,7 @@ impl Client {
             Ok(data) => Ok(data),
             Err(_) => {
                 if raw_response.len() > 0 {
-                    Err(ClientError::General(String::from("Response did not match your data type")))
+                    Err(ClientError::UnexpectedResponseType(raw_response))
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
@@ -343,23 +343,16 @@ impl Client {
     /// handle them.
     ///
     /// ```no_run
-    /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
     /// # use zoho_crm::Client;
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
     /// # let mut zoho_client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
-    /// # #[derive(Deserialize)]
-    /// struct SampleRecord {
-    ///     id: String,
-    ///     name: String,
-    /// }
-    ///
     /// let mut record: HashMap<&str, &str> = HashMap::new();
     /// record.insert("name", "sample");
     ///
-    /// let response = zoho_client.insert::<SampleRecord>("Accounts", vec![record]).unwrap();
+    /// let response = zoho_client.insert("Accounts", vec![record]).unwrap();
     ///
     /// for record in response.data {
     ///     match record.code.as_str() {
@@ -368,7 +361,7 @@ impl Client {
     ///     }
     /// }
     /// ```
-    pub fn insert<T: serde::de::DeserializeOwned>(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse<T>, ClientError> {
+    pub fn insert(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse, ClientError> {
         if self.access_token.is_none() {
            self.get_new_token()?;
        }
@@ -394,11 +387,11 @@ impl Client {
            return Err(ClientError::ApiError(response));
        }
 
-       match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
+       match serde_json::from_str::<ApiSuccessResponse>(&raw_response) {
            Ok(response) => Ok(response),
            Err(_) => {
                if raw_response.len() > 0 {
-                   Err(ClientError::General(String::from("Response did not match your data type")))
+                    Err(ClientError::UnexpectedResponseType(raw_response))
                } else {
                    Err(ClientError::General(String::from("Empty response")))
                }
@@ -417,23 +410,17 @@ impl Client {
     /// handle them.
     ///
     /// ```no_run
-    /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
     /// # use zoho_crm::Client;
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
     /// # let mut zoho_client = Client::with_creds(None, None, client_id, client_secret, refresh_token);
-    /// # #[derive(Deserialize)]
-    /// struct SampleRecord {
-    ///     name: String,
-    /// }
-    ///
     /// let mut record: HashMap<&str, &str> = HashMap::new();
     /// record.insert("id", "ZOHO_RECORD_ID_HERE");
     /// record.insert("name", "sample");
     ///
-    /// let response = zoho_client.update_many::<SampleRecord>("Accounts", vec![record]).unwrap();
+    /// let response = zoho_client.update_many("Accounts", vec![record]).unwrap();
     ///
     /// for record in response.data {
     ///     match record.code.as_str() {
@@ -442,7 +429,7 @@ impl Client {
     ///     }
     /// }
     /// ```
-    pub fn update_many<T: serde::de::DeserializeOwned>(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse<T>, ClientError> {
+    pub fn update_many(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse, ClientError> {
         if self.access_token.is_none() {
             self.get_new_token()?;
         }
@@ -467,11 +454,11 @@ impl Client {
             return Err(ClientError::ApiError(response));
         }
 
-        match serde_json::from_str::<ApiSuccessResponse<T>>(&raw_response) {
+        match serde_json::from_str::<ApiSuccessResponse>(&raw_response) {
             Ok(response) => Ok(response),
             Err(_) => {
                 if raw_response.len() > 0 {
-                    Err(ClientError::General(String::from("Response did not match your data type")))
+                    Err(ClientError::UnexpectedResponseType(raw_response))
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
@@ -546,16 +533,27 @@ struct AuthErrorResponse {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ApiSuccessResponse<T> {
-    pub data: Vec<ApiSuccessResponseDataItem<T>>,
+pub struct ApiSuccessResponse {
+    pub data: Vec<ApiSuccessResponseDataItem>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ApiSuccessResponseDataItem<T> {
+pub struct ApiSuccessResponseDataItem {
     pub code: String,
-    pub details: T,
+    pub details: ResponseDataItemDetails,
     pub message: String,
     pub status: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResponseDataItemDetails {
+    #[serde(alias = "Modified_Time")]
+    pub modified_time: String,
+
+    #[serde(alias = "Created_Time")]
+    pub created_time: String,
+
+    pub id: String,
 }
 
 /// This is one possible error response that Zoho might send back from an API request. It is
@@ -825,14 +823,35 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let record_id = "40000000123456789";
-        let body = format!(r#"{{"data":[{{"code":"SUCCESS","details":{{"id":"{}","name":"Record Name"}},"message":"record updated","status":"success"}}]}}"#, record_id);
+        let body = format!(r#"{{
+            "data": [
+                {{
+                    "code": "SUCCESS",
+                    "details": {{
+                        "Modified_Time": "2019-05-02T11:17:33+05:30",
+                        "Modified_By": {{
+                            "name": "Patricia Boyle",
+                            "id": "554023000000235011"
+                        }},
+                        "Created_Time": "2019-05-02T11:17:33+05:30",
+                        "id": "{}",
+                        "Created_By": {{
+                            "name": "Patricia Boyle",
+                            "id": "554023000000235011"
+                        }}
+                    }},
+                    "message": "record added",
+                    "status": "success"
+                }}
+            ]
+        }}"#, record_id);
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
         let mut client = get_client(Some(access_token.to_string()), Some(api_domain.to_string()));
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
-        let response = client.insert::<ResponseRecord>("Accounts", vec![record]).unwrap();
+        let response = client.insert("Accounts", vec![record]).unwrap();
 
         mocker.assert();
         assert_eq!(response.data.get(0).unwrap().details.id, record_id);
@@ -844,14 +863,19 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let error_code = "INVALID_MODULE";
-        let body = format!(r#"{{"code":"{}","details":{{}},"message":"Please check if the URL trying to access is a correct one","status":"error"}}"#, error_code);
+        let body = format!(r#"{{
+            "code": "{}",
+            "details": {{}},
+            "message": "Please check if the URL trying to access is a correct one",
+            "status": "error"
+        }}"#, error_code);
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
         let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
-        match client.insert::<ResponseRecord>("INVALID_MODULE", vec![record]) {
+        match client.insert("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
                 match err {
@@ -877,7 +901,7 @@ mod tests {
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
-        match client.insert::<ResponseRecord>("INVALID_MODULE", vec![record]) {
+        match client.insert("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
                 assert_eq!(err.to_string(), error_code.to_string());
@@ -893,14 +917,35 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let record_id = "40000000123456789";
-        let body = format!(r#"{{"data":[{{"code":"SUCCESS","details":{{"id":"{}","name":"Record Name"}},"message":"record updated","status":"success"}}]}}"#, record_id);
+        let body = format!(r#"{{
+            "data": [
+                {{
+                    "code": "SUCCESS",
+                    "details": {{
+                      "Modified_Time": "2019-05-02T11:17:33+05:30",
+                      "Modified_By": {{
+                        "name": "Patricia Boyle",
+                        "id": "554023000000235011"
+                      }},
+                      "Created_Time": "2019-05-02T11:17:33+05:30",
+                      "id": "{}",
+                      "Created_By": {{
+                        "name": "Patricia Boyle",
+                        "id": "554023000000235011"
+                      }}
+                    }},
+                    "message": "record updated",
+                    "status": "success"
+                }}
+            ]
+        }}"#, record_id);
         let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
         let mut client = get_client(Some(access_token.to_string()), Some(api_domain.to_string()));
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
-        let response = client.update_many::<ResponseRecord>("Accounts", vec![record]).unwrap();
+        let response = client.update_many("Accounts", vec![record]).unwrap();
 
         mocker.assert();
         assert_eq!(response.data.get(0).unwrap().details.id, record_id);
@@ -912,14 +957,19 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let error_code = "INVALID_MODULE";
-        let body = format!(r#"{{"code":"{}","details":{{}},"message":"Please check if the URL trying to access is a correct one","status":"error"}}"#, error_code);
+        let body = format!(r#"{{
+            "code": "{}",
+            "details": {{}},
+            "message": "Please check if the URL trying to access is a correct one",
+            "status": "error"
+        }}"#, error_code);
         let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
         let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
-        match client.update_many::<ResponseRecord>("INVALID_MODULE", vec![record]) {
+        match client.update_many("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
                 match err {
@@ -945,7 +995,7 @@ mod tests {
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
-        match client.update_many::<ResponseRecord>("INVALID_MODULE", vec![record]) {
+        match client.update_many("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
             Err(err) => {
                 assert_eq!(err.to_string(), error_code.to_string());
