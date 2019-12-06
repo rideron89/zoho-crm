@@ -342,6 +342,8 @@ impl Client {
     /// We do not want to assume this is an *unsuccessful* response, and so it is up to you to
     /// handle them.
     ///
+    /// The `params` argument accepts any serializable data type.
+    ///
     /// ```no_run
     /// # use std::collections::HashMap;
     /// # use zoho_crm::Client;
@@ -361,7 +363,9 @@ impl Client {
     ///     }
     /// }
     /// ```
-    pub fn insert(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse, ClientError> {
+    pub fn insert<T>(&mut self, module: &str, data: Vec<T>) -> Result<ApiSuccessResponse, ClientError>
+        where T: serde::ser::Serialize
+    {
         if self.access_token.is_none() {
            self.get_new_token()?;
        }
@@ -377,7 +381,7 @@ impl Client {
        let url = format!("{}/crm/v2/{}", api_domain, module);
 
        // Zoho requires incoming data to be sent via a `data` field
-       let mut params: HashMap<&str, Vec<HashMap<&str, &str>>> = HashMap::new();
+       let mut params: HashMap<&str, Vec<T>> = HashMap::new();
        params.insert("data", data);
 
        let mut response = client
@@ -413,6 +417,8 @@ impl Client {
     /// We do not want to assume this is an *unsuccessful* response, and so it is up to you to
     /// handle them.
     ///
+    /// The `params` argument accepts any serializable data type.
+    ///
     /// ```no_run
     /// # use std::collections::HashMap;
     /// # use zoho_crm::Client;
@@ -433,7 +439,9 @@ impl Client {
     ///     }
     /// }
     /// ```
-    pub fn update_many(&mut self, module: &str, data: Vec<HashMap<&str, &str>>) -> Result<ApiSuccessResponse, ClientError> {
+    pub fn update_many<T>(&mut self, module: &str, data: Vec<T>)-> Result<ApiSuccessResponse, ClientError>
+        where T: serde::ser::Serialize
+    {
         if self.access_token.is_none() {
             self.get_new_token()?;
         }
@@ -448,7 +456,7 @@ impl Client {
         let url = format!("{}/crm/v2/{}", api_domain, module);
 
         // Zoho requires incoming data to be sent via a `data` field
-        let mut params: HashMap<&str, Vec<HashMap<&str, &str>>> = HashMap::new();
+        let mut params: HashMap<&str, Vec<T>> = HashMap::new();
         params.insert("data", data);
 
         let mut response = client
