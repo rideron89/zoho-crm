@@ -1,12 +1,12 @@
 [package]
 name = "zoho-crm"
-version = "0.2.0"
+version = "0.3.0"
 description = "Library to help interact with v2 of the Zoho CRM API."
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/rideron89/zoho-crm"
 homepage = "https://github.com/rideron89/zoho-crm"
-documentation = "https://docs.rs/zoho-crm/0.2.0/zoho_crm"
+documentation = "https://docs.rs/zoho-crm/0.3.0/zoho_crm"
 authors = ["rideron89"]
 edition = "2018"
 keywords = ["zoho"]
