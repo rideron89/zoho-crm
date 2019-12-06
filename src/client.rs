@@ -233,7 +233,7 @@ impl Client {
             Ok(data) => Ok(data),
             Err(_) => {
                 if raw_response.len() > 0 {
-                    Err(ClientError::General(raw_response))
+                    Err(ClientError::General(String::from("Response did not match your data type")))
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
@@ -324,7 +324,7 @@ impl Client {
             Ok(data) => Ok(data),
             Err(_) => {
                 if raw_response.len() > 0 {
-                    Err(ClientError::General(raw_response))
+                    Err(ClientError::General(String::from("Response did not match your data type")))
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
@@ -398,7 +398,7 @@ impl Client {
            Ok(response) => Ok(response),
            Err(_) => {
                if raw_response.len() > 0 {
-                   Err(ClientError::General(raw_response))
+                   Err(ClientError::General(String::from("Response did not match your data type")))
                } else {
                    Err(ClientError::General(String::from("Empty response")))
                }
@@ -471,7 +471,7 @@ impl Client {
             Ok(response) => Ok(response),
             Err(_) => {
                 if raw_response.len() > 0 {
-                    Err(ClientError::General(raw_response))
+                    Err(ClientError::General(String::from("Response did not match your data type")))
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
