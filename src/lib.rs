@@ -46,6 +46,7 @@ extern crate serde_urlencoded;
 
 mod client_error;
 mod client;
+pub mod response;
 mod token_record;
 
 pub use client::Client;

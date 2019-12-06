@@ -1,4 +1,4 @@
-use crate::client::ApiErrorResponse;
+use crate::response::ApiErrorResponse;
 use std::fmt;
 
 /// Various errors returned by the API.
