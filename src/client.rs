@@ -561,8 +561,28 @@ pub struct ApiSuccessResponseDataItem {
     pub status: String,
 }
 
+// The order of the variants matter here, because `serde` will try to match each variant,
+// starting from the top.
 #[derive(Debug, Deserialize)]
-pub struct ResponseDataItemDetails {
+#[serde(untagged)]
+pub enum ResponseDataItemDetails {
+    Success(ResponseDataItemDetailsSuccess),
+    Error(ResponseDataItemDetailsError),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResponseDataItemDetailsError {
+    api_name: Option<String>,
+    expected_data_type: Option<String>,
+    index: Option<String>,
+}
+
+/// Response details object returned when a record was succesfully insert or updated.
+///
+/// There are some other fields, shown [here](https://www.zoho.com/crm/developer/docs/api/insert-records.html),
+/// but they are ignored for now, for simplicity's sake.
+#[derive(Debug, Deserialize)]
+pub struct ResponseDataItemDetailsSuccess {
     #[serde(alias = "Modified_Time")]
     pub modified_time: String,
 
@@ -868,9 +888,17 @@ mod tests {
         record.insert("name", "New Record Name");
 
         let response = client.insert("Accounts", vec![record]).unwrap();
+        let response = response.data.get(0).unwrap();
+
+        let details = match &response.details {
+            ResponseDataItemDetails::Error(_) => {
+                panic!("Experienced an unexpected error");
+            },
+            ResponseDataItemDetails::Success(details) => details,
+        };
 
         mocker.assert();
-        assert_eq!(response.data.get(0).unwrap().details.id, record_id);
+        assert_eq!(details.id, record_id);
     }
 
     #[test]
@@ -962,9 +990,17 @@ mod tests {
         record.insert("name", "New Record Name");
 
         let response = client.update_many("Accounts", vec![record]).unwrap();
+        let response = response.data.get(0).unwrap();
+
+        let details = match &response.details {
+            ResponseDataItemDetails::Error(_) => {
+                panic!("Experienced an unexpected error");
+            },
+            ResponseDataItemDetails::Success(details) => details,
+        };
 
         mocker.assert();
-        assert_eq!(response.data.get(0).unwrap().details.id, record_id);
+        assert_eq!(details.id, record_id);
     }
 
     #[test]
