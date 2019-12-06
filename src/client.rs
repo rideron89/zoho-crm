@@ -376,10 +376,14 @@ impl Client {
 
        let url = format!("{}/crm/v2/{}", api_domain, module);
 
+       // Zoho requires incoming data to be sent via a `data` field
+       let mut params: HashMap<&str, Vec<HashMap<&str, &str>>> = HashMap::new();
+       params.insert("data", data);
+
        let mut response = client
            .post(url.as_str())
-           .header("Authorization", String::from("Zoho-oauthtoken") + &token)
-           .json(&data)
+           .header("Authorization", String::from("Zoho-oauthtoken ") + &token)
+           .json(&params)
            .send()?;
        let raw_response = response.text()?;
 
@@ -443,10 +447,14 @@ impl Client {
 
         let url = format!("{}/crm/v2/{}", api_domain, module);
 
+        // Zoho requires incoming data to be sent via a `data` field
+        let mut params: HashMap<&str, Vec<HashMap<&str, &str>>> = HashMap::new();
+        params.insert("data", data);
+
         let mut response = client
             .put(url.as_str())
-            .header("Authorization", String::from("Zoho-oauthtoken") + &token)
-            .json(&data)
+            .header("Authorization", String::from("Zoho-oauthtoken ") + &token)
+            .json(&params)
             .send()?;
         let raw_response = response.text()?;
 
