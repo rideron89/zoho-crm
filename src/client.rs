@@ -494,14 +494,11 @@ impl Client {
 /// # use serde::Deserialize;
 /// # use std::collections::HashMap;
 /// # use zoho_crm::{parse_params, Client};
-///
 /// # #[derive(Deserialize)]
 /// # struct Record {
 /// #     id: String,
 /// # }
-///
 /// # let mut client = Client::with_creds(None, None, String::from(""), String::from(""), String::from(""));
-///
 /// let mut params: HashMap<&str, &str> = HashMap::new();
 /// params.insert("page", "2");
 ///
