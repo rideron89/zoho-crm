@@ -47,6 +47,7 @@ pub struct Client {
     client_id: String,
     client_secret: String,
     refresh_token: String,
+    sandbox: bool,
     timeout: u64,
 }
 
@@ -68,12 +69,23 @@ impl Client {
             client_id,
             client_secret,
             refresh_token,
+            sandbox: false,
             timeout: DEFAULT_TIMEOUT,
         }
     }
 }
 
 impl Client {
+    /// Get the sandbox configuration.
+    pub fn sandbox(&self) -> bool {
+        self.sandbox
+    }
+
+    /// Have the client use sandbox URLs.
+    pub fn set_sandbox(&mut self, sandbox: bool) {
+        self.sandbox = sandbox
+    }
+
     /// Get the timeout (in seconds) for API requests.
     pub fn timeout(&self) -> u64 {
         self.timeout
@@ -91,7 +103,11 @@ impl Client {
 
     /// Get the API domain URL.
     pub fn api_domain(&self) -> Option<String> {
-        self.api_domain.clone()
+        if self.sandbox() {
+            Some(String::from("https://crmsandbox.zoho.com"))
+        } else {
+            self.api_domain.clone()
+        }
     }
 
     /// Get an abbreviated version of the access token. This is a (slightly) safer version
@@ -602,6 +618,29 @@ mod tests {
 
         assert_ne!(client.access_token().unwrap().len(), 15);
         assert_eq!(client.abbreviated_access_token().unwrap().len(), 15);
+    }
+
+    #[test]
+    fn api_domain() {
+        let api_domain = "https://test.com";
+        let client = get_client(None, Some(api_domain.to_string()));
+
+        assert_eq!(api_domain, client.api_domain().unwrap());
+    }
+
+    #[test]
+    fn api_domain_sandbox() {
+        let api_domain = "https://test.com";
+        let sandbox_api_domain = "https://crmsandbox.zoho.com";
+
+        let id = String::from("id");
+        let secret = String::from("secret");
+        let refresh_token = String::from("refresh_token");
+
+        let mut client = Client::with_creds(None, Some(api_domain.to_string()), id, secret, refresh_token);
+        client.set_sandbox(true);
+
+        assert_eq!(sandbox_api_domain, client.api_domain().unwrap());
     }
 
     #[test]
