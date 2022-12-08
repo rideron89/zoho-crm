@@ -16,7 +16,7 @@
 //!
 //! ```no_run
 //! use serde::Deserialize;
-//! use zoho_crm::Client;
+//! use zohoxide_crm::Client;
 //!
 //! let client_id = String::from("YOUR_CLIENT_ID");
 //! let client_secret = String::from("YOUR_CLIENT_SECRET");
@@ -44,12 +44,12 @@ extern crate serde;
 extern crate serde_json;
 extern crate serde_urlencoded;
 
-mod client_error;
 mod client;
+mod client_error;
 pub mod response;
 mod token_record;
 
-pub use client::Client;
 pub use client::parse_params;
+pub use client::Client;
 pub use client_error::ClientError;
 pub use token_record::TokenRecord;

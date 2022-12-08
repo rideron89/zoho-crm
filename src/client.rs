@@ -1,7 +1,7 @@
 use crate::client_error::ClientError;
+use crate::response;
 use crate::token_record::TokenRecord;
 use reqwest;
-use crate::response;
 use std::collections::HashMap;
 use std::time::Duration;
 
@@ -24,7 +24,7 @@ const DEFAULT_TIMEOUT: u64 = 30;
 /// You should create a [`Client`](struct.Client) with the [`with_creds()`](struct.Client.html#method.with_creds) method.
 ///
 /// ```
-/// use zoho_crm::Client;
+/// use zohoxide_crm::Client;
 ///
 /// let client_id = "YOUR_CLIENT_ID";
 /// let client_secret = "YOUR_CLIENT_SECRET";
@@ -61,7 +61,7 @@ impl Client {
         api_domain: Option<String>,
         client_id: String,
         client_secret: String,
-        refresh_token: String
+        refresh_token: String,
     ) -> Client {
         Client {
             access_token,
@@ -114,7 +114,7 @@ impl Client {
     /// of the access token should you need to print it out.
     ///
     /// ```
-    /// # use zoho_crm::Client;
+    /// # use zohoxide_crm::Client;
     /// let token = "1000.ad8f97a9sd7f9a7sdf7a89s7df87a9s8.a77fd8a97fa89sd7f89a7sdf97a89df3";
     /// # let client_id = String::from("YOUR_CLIENT_ID");
     /// # let client_secret = String::from("YOUR_CLIENT_SECRET");
@@ -128,17 +128,15 @@ impl Client {
         match &self.access_token {
             Some(access_token) => {
                 let prefix = &access_token[0..9];
-                let suffix = &access_token.chars()
-                    .rev()
-                    .collect::<String>()[0..4]
+                let suffix = &access_token.chars().rev().collect::<String>()[0..4]
                     .chars()
                     .rev()
                     .collect::<String>();
                 let abbreviated_token = format!("{}..{}", prefix, suffix);
 
                 Some(abbreviated_token)
-            },
-            None => None
+            }
+            None => None,
         }
     }
 }
@@ -186,7 +184,7 @@ impl Client {
 
         match &self.access_token {
             Some(_) => Ok(api_response),
-            None => Err(ClientError::from("No token received"))
+            None => Err(ClientError::from("No token received")),
         }
     }
 
@@ -205,7 +203,7 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// use zoho_crm::Client;
+    /// use zohoxide_crm::Client;
     ///
     /// #[derive(Deserialize)]
     /// struct Account {
@@ -222,7 +220,11 @@ impl Client {
     /// let account = response.data.get(0).unwrap();
     /// assert_eq!(account.name, "Account name");
     /// ```
-    pub fn get<T: serde::de::DeserializeOwned>(&mut self, module: &str, id: &str) -> Result<response::ApiGetResponse<T>, ClientError> {
+    pub fn get<T: serde::de::DeserializeOwned>(
+        &mut self,
+        module: &str,
+        id: &str,
+    ) -> Result<response::ApiGetResponse<T>, ClientError> {
         if self.access_token.is_none() {
             self.get_new_token()?;
         }
@@ -253,7 +255,7 @@ impl Client {
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
-            },
+            }
         }
     }
 
@@ -267,7 +269,7 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// use zoho_crm::Client;
+    /// use zohoxide_crm::Client;
     ///
     /// #[derive(Deserialize)]
     /// struct Account {
@@ -287,7 +289,7 @@ impl Client {
     /// ```no_run
     /// # use serde::Deserialize;
     /// # use std::collections::HashMap;
-    /// use zoho_crm::{parse_params, Client};
+    /// use zohoxide_crm::{parse_params, Client};
     ///
     /// #[derive(Deserialize)]
     /// struct Account {
@@ -308,7 +310,11 @@ impl Client {
     /// let params = parse_params(params).unwrap();
     /// let accounts = client.get_many::<Account>("Accounts", Some(params)).unwrap();
     /// ```
-    pub fn get_many<T: serde::de::DeserializeOwned>(&mut self, module: &str, params: Option<String>) -> Result<response::ApiGetManyResponse<T>, ClientError> {
+    pub fn get_many<T: serde::de::DeserializeOwned>(
+        &mut self,
+        module: &str,
+        params: Option<String>,
+    ) -> Result<response::ApiGetManyResponse<T>, ClientError> {
         if self.access_token.is_none() {
             self.get_new_token()?;
         }
@@ -344,7 +350,7 @@ impl Client {
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
-            },
+            }
         }
     }
 
@@ -362,7 +368,7 @@ impl Client {
     ///
     /// ```no_run
     /// # use std::collections::HashMap;
-    /// # use zoho_crm::Client;
+    /// # use zohoxide_crm::Client;
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
@@ -379,49 +385,54 @@ impl Client {
     ///     }
     /// }
     /// ```
-    pub fn insert<T>(&mut self, module: &str, data: Vec<T>) -> Result<response::ApiSuccessResponse, ClientError>
-        where T: serde::ser::Serialize
+    pub fn insert<T>(
+        &mut self,
+        module: &str,
+        data: Vec<T>,
+    ) -> Result<response::ApiSuccessResponse, ClientError>
+    where
+        T: serde::ser::Serialize,
     {
         if self.access_token.is_none() {
-           self.get_new_token()?;
-       }
+            self.get_new_token()?;
+        }
 
-       // we are guaranteed a token when we reach this line
-       let token = self.access_token().unwrap();
-       let api_domain = self.api_domain().unwrap();
+        // we are guaranteed a token when we reach this line
+        let token = self.access_token().unwrap();
+        let api_domain = self.api_domain().unwrap();
 
-       let client = reqwest::Client::builder()
-           .timeout(Duration::from_secs(self.timeout))
-           .build()?;
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(self.timeout))
+            .build()?;
 
-       let url = format!("{}/crm/v2/{}", api_domain, module);
+        let url = format!("{}/crm/v2/{}", api_domain, module);
 
-       // Zoho requires incoming data to be sent via a `data` field
-       let mut params: HashMap<&str, Vec<T>> = HashMap::new();
-       params.insert("data", data);
+        // Zoho requires incoming data to be sent via a `data` field
+        let mut params: HashMap<&str, Vec<T>> = HashMap::new();
+        params.insert("data", data);
 
-       let mut response = client
-           .post(url.as_str())
-           .header("Authorization", String::from("Zoho-oauthtoken ") + &token)
-           .json(&params)
-           .send()?;
-       let raw_response = response.text()?;
+        let mut response = client
+            .post(url.as_str())
+            .header("Authorization", String::from("Zoho-oauthtoken ") + &token)
+            .json(&params)
+            .send()?;
+        let raw_response = response.text()?;
 
-       if let Ok(response) = serde_json::from_str::<response::ApiErrorResponse>(&raw_response) {
-           return Err(ClientError::ApiError(response));
-       }
+        if let Ok(response) = serde_json::from_str::<response::ApiErrorResponse>(&raw_response) {
+            return Err(ClientError::ApiError(response));
+        }
 
-       match serde_json::from_str::<response::ApiSuccessResponse>(&raw_response) {
-           Ok(response) => Ok(response),
-           Err(_) => {
-               if raw_response.len() > 0 {
+        match serde_json::from_str::<response::ApiSuccessResponse>(&raw_response) {
+            Ok(response) => Ok(response),
+            Err(_) => {
+                if raw_response.len() > 0 {
                     Err(ClientError::UnexpectedResponseType(raw_response))
-               } else {
-                   Err(ClientError::General(String::from("Empty response")))
-               }
-           },
-       }
-   }
+                } else {
+                    Err(ClientError::General(String::from("Empty response")))
+                }
+            }
+        }
+    }
 
     /// Updates multiple records in Zoho.
     ///
@@ -437,7 +448,7 @@ impl Client {
     ///
     /// ```no_run
     /// # use std::collections::HashMap;
-    /// # use zoho_crm::Client;
+    /// # use zohoxide_crm::Client;
     /// # let client_id = String::from("");
     /// # let client_secret = String::from("");
     /// # let refresh_token = String::from("");
@@ -455,8 +466,13 @@ impl Client {
     ///     }
     /// }
     /// ```
-    pub fn update_many<T>(&mut self, module: &str, data: Vec<T>)-> Result<response::ApiSuccessResponse, ClientError>
-        where T: serde::ser::Serialize
+    pub fn update_many<T>(
+        &mut self,
+        module: &str,
+        data: Vec<T>,
+    ) -> Result<response::ApiSuccessResponse, ClientError>
+    where
+        T: serde::ser::Serialize,
     {
         if self.access_token.is_none() {
             self.get_new_token()?;
@@ -494,7 +510,7 @@ impl Client {
                 } else {
                     Err(ClientError::General(String::from("Empty response")))
                 }
-            },
+            }
         }
     }
 }
@@ -509,7 +525,7 @@ impl Client {
 /// ```no_run
 /// # use serde::Deserialize;
 /// # use std::collections::HashMap;
-/// # use zoho_crm::{parse_params, Client};
+/// # use zohoxide_crm::{parse_params, Client};
 /// # #[derive(Deserialize)]
 /// # struct Record {
 /// #     id: String,
@@ -524,7 +540,9 @@ impl Client {
 /// client.get_many::<Record>("Accounts", Some(params)).unwrap();
 /// ```
 #[allow(dead_code)]
-pub fn parse_params(params: impl serde::ser::Serialize) -> Result<String, serde_urlencoded::ser::Error> {
+pub fn parse_params(
+    params: impl serde::ser::Serialize,
+) -> Result<String, serde_urlencoded::ser::Error> {
     serde_urlencoded::to_string(params)
 }
 
@@ -532,8 +550,8 @@ pub fn parse_params(params: impl serde::ser::Serialize) -> Result<String, serde_
 mod tests {
     extern crate mockito;
 
-    use mockito::{mock, Matcher, Mock};
     use super::*;
+    use mockito::{mock, Matcher, Mock};
     use serde::Deserialize;
     use std::collections::HashMap;
 
@@ -637,7 +655,13 @@ mod tests {
         let secret = String::from("secret");
         let refresh_token = String::from("refresh_token");
 
-        let mut client = Client::with_creds(None, Some(api_domain.to_string()), id, secret, refresh_token);
+        let mut client = Client::with_creds(
+            None,
+            Some(api_domain.to_string()),
+            id,
+            secret,
+            refresh_token,
+        );
         client.set_sandbox(true);
 
         assert_eq!(sandbox_api_domain, client.api_domain().unwrap());
@@ -666,7 +690,10 @@ mod tests {
     fn get_new_api_domain_success() {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = "https://www.zohoapis.com";
-        let body = format!(r#"{{"access_token":"{}","expires_in_sec":3600,"api_domain":"{}","token_type":"Bearer","expires_in":3600000}}"#, access_token, api_domain);
+        let body = format!(
+            r#"{{"access_token":"{}","expires_in_sec":3600,"api_domain":"{}","token_type":"Bearer","expires_in":3600000}}"#,
+            access_token, api_domain
+        );
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
         let mut client = get_client(None, None);
 
@@ -701,7 +728,10 @@ mod tests {
     fn return_new_token_success() {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = "https://www.zohoapis.com";
-        let body = format!(r#"{{"access_token":"{}","expires_in_sec":3600,"api_domain":"{}","token_type":"Bearer","expires_in":3600000}}"#, access_token, api_domain);
+        let body = format!(
+            r#"{{"access_token":"{}","expires_in_sec":3600,"api_domain":"{}","token_type":"Bearer","expires_in":3600000}}"#,
+            access_token, api_domain
+        );
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
         let mut client = get_client(None, None);
 
@@ -717,7 +747,10 @@ mod tests {
     fn return_api_domain_success() {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = "https://www.zohoapis.com";
-        let body = format!(r#"{{"access_token":"{}","expires_in_sec":3600,"api_domain":"{}","token_type":"Bearer","expires_in":3600000}}"#, access_token, api_domain);
+        let body = format!(
+            r#"{{"access_token":"{}","expires_in_sec":3600,"api_domain":"{}","token_type":"Bearer","expires_in":3600000}}"#,
+            access_token, api_domain
+        );
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
         let mut client = get_client(None, None);
 
@@ -733,9 +766,15 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let record_id = "40000000123456789";
-        let body = format!(r#"{{"data":[{{"id":"{}"}}],"info":{{"more_records":true,"per_page":1,"count":1,"page":1}}}}"#, record_id);
+        let body = format!(
+            r#"{{"data":[{{"id":"{}"}}],"info":{{"more_records":true,"per_page":1,"count":1,"page":1}}}}"#,
+            record_id
+        );
         let mocker = get_mocker("GET", Matcher::Any, Some(&body));
-        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+        let mut client = get_client(
+            Some(String::from(access_token)),
+            Some(String::from(api_domain)),
+        );
 
         let response = client.get::<ResponseRecord>("Accounts", record_id).unwrap();
 
@@ -749,18 +788,22 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let error_code = "INVALID_URL_PATTERN";
-        let body = format!(r#"{{"code":"{}","details":{{}},"message":"Please check if the URL trying to access is a correct one","status":"error"}}"#, error_code);
+        let body = format!(
+            r#"{{"code":"{}","details":{{}},"message":"Please check if the URL trying to access is a correct one","status":"error"}}"#,
+            error_code
+        );
         let mocker = get_mocker("GET", Matcher::Any, Some(&body));
-        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+        let mut client = get_client(
+            Some(String::from(access_token)),
+            Some(String::from(api_domain)),
+        );
 
         match client.get::<ResponseRecord>("INVALID_MODULE", "00000") {
             Ok(_) => panic!("Response did not return an error"),
-            Err(err) => {
-                match err {
-                    ClientError::ApiError(error) => assert_eq!(error.code, error_code),
-                    _ => panic!("Wrong error type"),
-                }
-            }
+            Err(err) => match err {
+                ClientError::ApiError(error) => assert_eq!(error.code, error_code),
+                _ => panic!("Wrong error type"),
+            },
         }
 
         mocker.assert();
@@ -774,7 +817,10 @@ mod tests {
         let error_code = "invalid_client";
         let body = format!("{}", error_code);
         let mocker = get_mocker("GET", Matcher::Any, Some(&body));
-        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+        let mut client = get_client(
+            Some(String::from(access_token)),
+            Some(String::from(api_domain)),
+        );
 
         match client.get::<ResponseRecord>("INVALID_MODULE", "00000") {
             Ok(_) => panic!("Response did not return an error"),
@@ -792,7 +838,8 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let record_id = "40000000123456789";
-        let body = format!(r#"{{
+        let body = format!(
+            r#"{{
             "data": [
                 {{
                     "code": "SUCCESS",
@@ -813,7 +860,9 @@ mod tests {
                     "status": "success"
                 }}
             ]
-        }}"#, record_id);
+        }}"#,
+            record_id
+        );
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
         let mut client = get_client(Some(access_token.to_string()), Some(api_domain.to_string()));
 
@@ -826,7 +875,7 @@ mod tests {
         let details = match &response.details {
             response::ResponseDataItemDetails::Error(_) => {
                 panic!("Experienced an unexpected error");
-            },
+            }
             response::ResponseDataItemDetails::Success(details) => details,
         };
 
@@ -840,26 +889,30 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let error_code = "INVALID_MODULE";
-        let body = format!(r#"{{
+        let body = format!(
+            r#"{{
             "code": "{}",
             "details": {{}},
             "message": "Please check if the URL trying to access is a correct one",
             "status": "error"
-        }}"#, error_code);
+        }}"#,
+            error_code
+        );
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
-        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+        let mut client = get_client(
+            Some(String::from(access_token)),
+            Some(String::from(api_domain)),
+        );
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
         match client.insert("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
-            Err(err) => {
-                match err {
-                    ClientError::ApiError(error) => assert_eq!(error.code, error_code),
-                    _ => panic!("Wrong error type"),
-                }
-            }
+            Err(err) => match err {
+                ClientError::ApiError(error) => assert_eq!(error.code, error_code),
+                _ => panic!("Wrong error type"),
+            },
         }
 
         mocker.assert();
@@ -873,7 +926,10 @@ mod tests {
         let error_code = "invalid_client";
         let body = format!("{}", error_code);
         let mocker = get_mocker("POST", Matcher::Any, Some(&body));
-        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+        let mut client = get_client(
+            Some(String::from(access_token)),
+            Some(String::from(api_domain)),
+        );
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
@@ -894,7 +950,8 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let record_id = "40000000123456789";
-        let body = format!(r#"{{
+        let body = format!(
+            r#"{{
             "data": [
                 {{
                     "code": "SUCCESS",
@@ -915,7 +972,9 @@ mod tests {
                     "status": "success"
                 }}
             ]
-        }}"#, record_id);
+        }}"#,
+            record_id
+        );
         let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
         let mut client = get_client(Some(access_token.to_string()), Some(api_domain.to_string()));
 
@@ -928,7 +987,7 @@ mod tests {
         let details = match &response.details {
             response::ResponseDataItemDetails::Error(_) => {
                 panic!("Experienced an unexpected error");
-            },
+            }
             response::ResponseDataItemDetails::Success(details) => details,
         };
 
@@ -942,26 +1001,30 @@ mod tests {
         let access_token = "9999.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         let api_domain = mockito::server_url();
         let error_code = "INVALID_MODULE";
-        let body = format!(r#"{{
+        let body = format!(
+            r#"{{
             "code": "{}",
             "details": {{}},
             "message": "Please check if the URL trying to access is a correct one",
             "status": "error"
-        }}"#, error_code);
+        }}"#,
+            error_code
+        );
         let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
-        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+        let mut client = get_client(
+            Some(String::from(access_token)),
+            Some(String::from(api_domain)),
+        );
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");
 
         match client.update_many("INVALID_MODULE", vec![record]) {
             Ok(_) => panic!("Response did not return an error"),
-            Err(err) => {
-                match err {
-                    ClientError::ApiError(error) => assert_eq!(error.code, error_code),
-                    _ => panic!("Wrong error type"),
-                }
-            }
+            Err(err) => match err {
+                ClientError::ApiError(error) => assert_eq!(error.code, error_code),
+                _ => panic!("Wrong error type"),
+            },
         }
 
         mocker.assert();
@@ -975,7 +1038,10 @@ mod tests {
         let error_code = "invalid_client";
         let body = format!("{}", error_code);
         let mocker = get_mocker("PUT", Matcher::Any, Some(&body));
-        let mut client = get_client(Some(String::from(access_token)), Some(String::from(api_domain)));
+        let mut client = get_client(
+            Some(String::from(access_token)),
+            Some(String::from(api_domain)),
+        );
 
         let mut record: HashMap<&str, &str> = HashMap::new();
         record.insert("name", "New Record Name");

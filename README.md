@@ -1,4 +1,4 @@
-# zoho-rs
+# zohoxide-crm
 
 Library to help interact with v2 of the Zoho CRM API.
 
@@ -20,7 +20,7 @@ serde = { version = "1.0", features = ["derive"] }
 
 ```rust
 use serde::Deserialize;
-use zoho_crm::ZohoClient;
+use zohoxide_crm::ZohoClient;
 
 let client_id = String::from("YOUR_CLIENT_ID");
 let client_secret = String::from("YOUR_CLIENT_SECRET");
