@@ -7,7 +7,7 @@ readme = "README.md"
 repository = "https://github.com/vinchona/zohoxide-crm"
 homepage = "https://github.com/vinchona/zohoxide-crm"
 documentation = "https://docs.rs/zohoxide-crm/0.3.1/zohoxide_crm"
-authors = ["Kimye"]
+authors = ["rideron89", "vinchona"]
 edition = "2018"
 keywords = ["zoho"]
 
