@@ -1,4 +1,4 @@
-//! # zoho-crm
+//! # zohoxide-crm
 //!
 //! Library to help interact with v2 of the Zoho CRM API.
 //!
